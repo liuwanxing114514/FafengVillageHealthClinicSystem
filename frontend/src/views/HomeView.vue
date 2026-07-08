@@ -44,7 +44,7 @@ onMounted(async () => {
         </div>
       </template>
 
-      <p class="version">v0.6 库存管理</p>
+      <p class="version">v0.8 Excel 模板导入</p>
       <p class="hint">后端：{{ backendStatus }}</p>
 
       <div v-if="summary" class="stats">

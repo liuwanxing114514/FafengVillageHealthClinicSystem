@@ -6,6 +6,7 @@ import SetupView from '@/views/setup/SetupView.vue'
 import SettingsView from '@/views/settings/SettingsView.vue'
 import MedicineListView from '@/views/medicine/MedicineListView.vue'
 import MedicineEditView from '@/views/medicine/MedicineEditView.vue'
+import MedicineImportView from '@/views/medicine/MedicineImportView.vue'
 import PatientListView from '@/views/patient/PatientListView.vue'
 import PatientDetailView from '@/views/patient/PatientDetailView.vue'
 import VisitFormView from '@/views/visit/VisitFormView.vue'
@@ -47,6 +48,12 @@ const router = createRouter({
       path: '/medicine',
       name: 'medicine',
       component: MedicineListView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/medicine/import',
+      name: 'medicine-import',
+      component: MedicineImportView,
       meta: { requiresAuth: true },
     },
     {
