@@ -134,6 +134,11 @@ function goBack() {
   }
 }
 
+function goPrescription() {
+  if (!visitId.value || !form.patientId) return
+  router.push(`/prescription/new?visitId=${visitId.value}&patientId=${form.patientId}`)
+}
+
 async function onDelete() {
   if (!visitId.value) return
   try {
@@ -161,6 +166,7 @@ onMounted(loadVisit)
           <span class="title">{{ isNew ? '新建病历' : '病历详情' }}</span>
           <div class="actions">
             <el-button @click="goBack">返回患者</el-button>
+            <el-button v-if="!isNew" @click="goPrescription">开处方</el-button>
             <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
           </div>
         </div>
