@@ -43,8 +43,8 @@ class PrescriptionControllerTest {
                   "items": [
                     {
                       "medicineId": %d,
-                      "quantity": 2,
-                      "unit": "盒",
+                      "quantity": 24,
+                      "unit": "粒",
                       "usage": "口服，每日三次"
                     }
                   ]
@@ -122,7 +122,8 @@ class PrescriptionControllerTest {
                                   "dosageForm": "胶囊剂",
                                   "specification": "0.25g×12粒",
                                   "baseUnit": "粒",
-                                  "packageUnit": "盒"
+                                  "packageUnit": "盒",
+                                  "purchasePrice": 10
                                 }
                                 """))
                 .andExpect(status().isOk())

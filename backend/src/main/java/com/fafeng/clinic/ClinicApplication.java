@@ -9,7 +9,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.fafeng.clinic.system.mapper",
         "com.fafeng.clinic.medicine.mapper",
         "com.fafeng.clinic.patient.mapper",
-        "com.fafeng.clinic.clinic.mapper"
+        "com.fafeng.clinic.clinic.mapper",
+        "com.fafeng.clinic.inventory.mapper"
 })
 public class ClinicApplication {
 

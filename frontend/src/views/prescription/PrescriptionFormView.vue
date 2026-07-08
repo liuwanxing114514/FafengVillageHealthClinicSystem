@@ -196,6 +196,12 @@ function goPrint() {
   }
 }
 
+function goOutbound() {
+  if (prescriptionId.value) {
+    router.push(`/inventory/outbound?prescriptionId=${prescriptionId.value}`)
+  }
+}
+
 async function onOutboundDraft() {
   if (!prescriptionId.value) return
   try {
@@ -238,6 +244,7 @@ onMounted(loadForm)
           <div class="actions">
             <el-button @click="goBack">返回病历</el-button>
             <el-button v-if="!isNew" @click="onOutboundDraft">生成待出库清单</el-button>
+            <el-button v-if="!isNew" @click="goOutbound">出库</el-button>
             <el-button v-if="!isNew" @click="goPrint">打印</el-button>
             <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
           </div>
