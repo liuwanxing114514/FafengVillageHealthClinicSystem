@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { getInventoryAlerts } from '@/api/inventory'
 import type { InventoryAlerts } from '@/types/inventory'
 
-const router = useRouter()
 const loading = ref(false)
 const alerts = ref<InventoryAlerts | null>(null)
 
@@ -22,10 +20,7 @@ onMounted(async () => {
   <main class="page">
     <el-card v-loading="loading" shadow="never">
       <template #header>
-        <div class="header-row">
-          <span>库存预警</span>
-          <el-button @click="router.push('/')">返回首页</el-button>
-        </div>
+        <span>库存预警</span>
       </template>
 
       <h3>库存不足</h3>

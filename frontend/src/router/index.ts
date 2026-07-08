@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useTabsStore } from '@/stores/tabs'
+import MainLayout from '@/layouts/MainLayout.vue'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/login/LoginView.vue'
 import SetupView from '@/views/setup/SetupView.vue'
@@ -34,100 +36,107 @@ const router = createRouter({
       meta: { public: true },
     },
     {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/settings',
-      name: 'settings',
-      component: SettingsView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/medicine',
-      name: 'medicine',
-      component: MedicineListView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/medicine/import',
-      name: 'medicine-import',
-      component: MedicineImportView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/medicine/:id',
-      name: 'medicine-edit',
-      component: MedicineEditView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/patient',
-      name: 'patient',
-      component: PatientListView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/patient/:id',
-      name: 'patient-detail',
-      component: PatientDetailView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/visit/:id',
-      name: 'visit',
-      component: VisitFormView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/prescription/new',
-      name: 'prescription-new',
-      component: PrescriptionFormView,
-      meta: { requiresAuth: true },
-    },
-    {
       path: '/prescription/:id/print',
       name: 'prescription-print',
       component: PrescriptionPrintView,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, standalone: true, title: '处方打印' },
     },
     {
-      path: '/prescription/:id',
-      name: 'prescription-edit',
-      component: PrescriptionFormView,
+      path: '/',
+      component: MainLayout,
       meta: { requiresAuth: true },
-    },
-    {
-      path: '/ai',
-      name: 'ai-assistant',
-      component: AiAssistantView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/inventory/inbound',
-      name: 'inventory-inbound',
-      component: InboundView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/inventory/outbound',
-      name: 'inventory-outbound',
-      component: OutboundView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/inventory/flows',
-      name: 'inventory-flows',
-      component: FlowListView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/inventory/alerts',
-      name: 'inventory-alerts',
-      component: AlertListView,
-      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'home',
+          component: HomeView,
+          meta: { title: '首页' },
+        },
+        {
+          path: 'settings',
+          name: 'settings',
+          component: SettingsView,
+          meta: { title: '设置' },
+        },
+        {
+          path: 'medicine',
+          name: 'medicine',
+          component: MedicineListView,
+          meta: { title: '药品' },
+        },
+        {
+          path: 'medicine/import',
+          name: 'medicine-import',
+          component: MedicineImportView,
+          meta: { title: 'Excel 导入' },
+        },
+        {
+          path: 'medicine/:id',
+          name: 'medicine-edit',
+          component: MedicineEditView,
+          meta: { title: '药品' },
+        },
+        {
+          path: 'patient',
+          name: 'patient',
+          component: PatientListView,
+          meta: { title: '患者' },
+        },
+        {
+          path: 'patient/:id',
+          name: 'patient-detail',
+          component: PatientDetailView,
+          meta: { title: '患者' },
+        },
+        {
+          path: 'visit/:id',
+          name: 'visit-form',
+          component: VisitFormView,
+          meta: { title: '病历' },
+        },
+        {
+          path: 'prescription/new',
+          name: 'prescription-new',
+          component: PrescriptionFormView,
+          meta: { title: '新建处方' },
+        },
+        {
+          path: 'prescription/:id',
+          name: 'prescription-edit',
+          component: PrescriptionFormView,
+          meta: { title: '处方' },
+        },
+        {
+          path: 'ai',
+          name: 'ai-assistant',
+          component: AiAssistantView,
+          meta: { title: 'AI 助手' },
+        },
+        {
+          path: 'inventory/inbound',
+          name: 'inventory-inbound',
+          component: InboundView,
+          meta: { title: '入库' },
+        },
+        {
+          path: 'inventory/outbound',
+          name: 'inventory-outbound',
+          component: OutboundView,
+          meta: { title: '出库' },
+        },
+        {
+          path: 'inventory/flows',
+          name: 'inventory-flows',
+          component: FlowListView,
+          meta: { title: '库存流水' },
+        },
+        {
+          path: 'inventory/alerts',
+          name: 'inventory-alerts',
+          component: AlertListView,
+          meta: { title: '库存预警' },
+        },
+      ],
     },
   ],
 })
@@ -155,6 +164,12 @@ router.beforeEach(async (to) => {
   }
 
   return true
+})
+
+router.afterEach((to) => {
+  if (to.meta.public || to.meta.standalone) return
+  if (to.name === 'login' || to.name === 'setup') return
+  useTabsStore().syncFromRoute(to)
 })
 
 export default router

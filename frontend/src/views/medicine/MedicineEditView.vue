@@ -12,6 +12,7 @@ import {
   getMedicine,
   updateMedicine,
 } from '@/api/medicine'
+import { useTabTitle } from '@/composables/useTabTitle'
 import type { BarcodeItem, ConversionItem, MedicineDetail } from '@/types/medicine'
 
 const route = useRoute()
@@ -35,6 +36,11 @@ const form = reactive({
   stockThreshold: null as number | null,
   remark: '',
 })
+
+useTabTitle(computed(() => {
+  if (isNew.value) return '新建药品'
+  return form.name ? `药品：${form.name}` : ''
+}))
 
 const conversionForm = reactive({
   fromUnit: '',

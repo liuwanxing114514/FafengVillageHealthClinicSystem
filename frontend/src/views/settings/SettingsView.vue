@@ -64,10 +64,7 @@ onMounted(loadSettings)
   <main class="page">
     <el-card class="card" shadow="hover">
       <template #header>
-        <div class="header-row">
-          <span class="title">系统设置</span>
-          <el-button link type="primary" @click="router.push('/')">返回首页</el-button>
-        </div>
+        <span class="title">系统设置</span>
       </template>
 
       <h3 class="section">修改密码</h3>

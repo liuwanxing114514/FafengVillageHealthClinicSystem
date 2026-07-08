@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchSession, fetchSetupStatus, login as apiLogin, logout as apiLogout } from '@/api/auth'
+import { useTabsStore } from '@/stores/tabs'
 
 export const useAuthStore = defineStore('auth', () => {
   const needSetup = ref<boolean | null>(null)
@@ -33,6 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
     await apiLogout()
     authenticated.value = false
     operator.value = null
+    useTabsStore().reset()
   }
 
   return {

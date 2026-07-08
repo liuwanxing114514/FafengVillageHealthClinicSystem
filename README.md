@@ -91,7 +91,7 @@ npm run dev
 
 见 [`docs/共用/ROADMAP.md`](docs/共用/ROADMAP.md)。
 
-**当前进度**：v1.0 可部署版本已完成（Docker 一键部署、备份恢复、演示数据、单元测试）。后续 v1.1+ 见 [`docs/共用/ROADMAP.md`](docs/共用/ROADMAP.md) 与 [`docs/给Agent/进度清单-v0.5-v1.0.md`](docs/给Agent/进度清单-v0.5-v1.0.md)。
+**当前进度**：v1.0 可部署版本已完成；v1.0.1 起前端采用 **左侧菜单 + 多标签** 壳层（见 [`docs/给Agent/前端布局约定.md`](docs/给Agent/前端布局约定.md)）。
 
 ## Agent / Cursor 开发提示
 

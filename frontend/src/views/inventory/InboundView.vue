@@ -115,10 +115,7 @@ async function onSubmit() {
   <main class="page">
     <el-card shadow="never">
       <template #header>
-        <div class="header-row">
-          <span>手动入库</span>
-          <el-button @click="router.push('/')">返回首页</el-button>
-        </div>
+        <span>手动入库</span>
       </template>
 
       <BarcodeScanPanel @matched="onBarcodeMatched" />

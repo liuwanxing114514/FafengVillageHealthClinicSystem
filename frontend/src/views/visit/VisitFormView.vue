@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPatient } from '@/api/patient'
 import { createVisit, deleteVisit, getVisit, updateVisit } from '@/api/visit'
+import { useTabTitle } from '@/composables/useTabTitle'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,6 +39,14 @@ const form = reactive({
   treatment: '',
   remark: '',
 })
+
+useTabTitle(computed(() => {
+  if (isNew.value) {
+    return patientName.value ? `新建病历 · ${patientName.value}` : '新建病历'
+  }
+  const label = patientName.value || (form.diagnosis ? form.diagnosis.slice(0, 12) : '')
+  return label ? `病历 · ${label}` : `病历 #${visitId.value}`
+}))
 
 function formatDateTimeLocal(value: string) {
   if (!value) return ''

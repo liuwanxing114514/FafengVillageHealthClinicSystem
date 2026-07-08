@@ -13,6 +13,7 @@
 | [开发交接.md](开发交接.md) | 第一期总原则、包结构、不可破坏的业务规则、任务 0–11 |
 | [版本任务指南.md](版本任务指南.md) | **每个版本**该 @ 什么、复制即用 Prompt、验收清单 |
 | [进度清单-v0.5-v1.0.md](进度清单-v0.5-v1.0.md) | **v0.5–v1.0 连续开发**时的任务勾选与分支合并记录 |
+| [前端布局约定.md](前端布局约定.md) | **v1.0.1 起必 read**：主布局、左侧菜单、多标签、新页 Checklist |
 | [AI架构.md](AI架构.md) | AiProvider、ai_draft、T1 脱敏、Agent 边界 |
 
 ---
@@ -25,6 +26,7 @@
    @docs/共用/ROADMAP.md
    @docs/给Agent/开发交接.md
    @docs/给Agent/版本任务指南.md
+   @docs/给Agent/前端布局约定.md
    ```
 3. 若已有代码，再 @ `backend/`、`frontend/`、`docker-compose.yml` 等。  
 4. 打开 [版本任务指南.md](版本任务指南.md)，找到**当前版本**（如 v0.4、v1.3），复制 Prompt。  
