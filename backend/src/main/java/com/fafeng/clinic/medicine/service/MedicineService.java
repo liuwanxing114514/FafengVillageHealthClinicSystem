@@ -74,6 +74,27 @@ public class MedicineService {
         return new PageVO<>(records, result.getTotal(), safePage, safeSize);
     }
 
+    public MedicineListItemVO findByBarcode(String code) {
+        String normalized = code == null ? "" : code.trim();
+        if (normalized.isEmpty()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "条码不能为空");
+        }
+        MedicineBarcode barcode = barcodeMapper.selectOne(new LambdaQueryWrapper<MedicineBarcode>()
+                .eq(MedicineBarcode::getBarcode, normalized));
+        if (barcode == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "未找到条码对应药品，请先维护药品资料");
+        }
+        Medicine medicine = requireMedicine(barcode.getMedicineId());
+        if (Medicine.STATUS_INACTIVE.equals(medicine.getStatus())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "药品已停用：" + medicine.getName());
+        }
+        List<MedicineUnitConversion> conversions = listConversions(medicine.getId());
+        List<String> barcodes = listBarcodes(medicine.getId()).stream()
+                .map(MedicineBarcode::getBarcode)
+                .toList();
+        return toListItem(medicine, barcodes, conversions);
+    }
+
     @Transactional
     public MedicineDetailVO create(SaveMedicineRequest request) {
         Medicine medicine = new Medicine();
