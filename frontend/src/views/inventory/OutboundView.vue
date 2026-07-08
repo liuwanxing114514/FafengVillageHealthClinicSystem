@@ -4,7 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { confirmOutbound, previewOutbound } from '@/api/inventory'
 import { getPrescription } from '@/api/prescription'
+import BarcodeScanPanel from '@/components/inventory/BarcodeScanPanel.vue'
 import type { OutboundPreview, OutboundPreviewLine } from '@/types/inventory'
+import type { MedicineListItem } from '@/types/medicine'
 import type { PrescriptionDetail } from '@/types/prescription'
 
 const route = useRoute()
@@ -48,6 +50,24 @@ function selectLine(line: OutboundPreviewLine) {
   }
 }
 
+function onBarcodeMatched(medicine: MedicineListItem) {
+  if (!preview.value) {
+    ElMessage.warning('请先加载处方出库预览')
+    return
+  }
+  const line = preview.value.lines.find((l) => l.medicineId === medicine.id)
+  if (!line) {
+    ElMessage.warning('该药品不在当前处方中')
+    return
+  }
+  if (!line.sufficient) {
+    ElMessage.warning(`${line.medicineName} 库存不足`)
+    return
+  }
+  selectLine(line)
+  ElMessage.success(`已选中 ${line.medicineName}，请确认批次出库`)
+}
+
 async function confirmLine(line: OutboundPreviewLine) {
   if (!prescription.value || !line.sufficient) return
   const allocs = line.recommendedAllocations
@@ -89,6 +109,8 @@ onMounted(load)
 
       <template v-if="prescription">
         <p>患者：{{ prescription.patientName }} · 处方 #{{ prescription.id }}</p>
+
+        <BarcodeScanPanel @matched="onBarcodeMatched" />
 
         <el-table :data="preview?.lines ?? []" @row-click="selectLine">
           <el-table-column prop="medicineName" label="药品" />

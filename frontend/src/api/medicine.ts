@@ -28,6 +28,10 @@ export async function getMedicine(id: number): Promise<MedicineDetail> {
   return getData<MedicineDetail>(`/medicines/${id}`)
 }
 
+export async function findMedicineByBarcode(code: string): Promise<MedicineListItem> {
+  return getData<MedicineListItem>(`/medicines/by-barcode/${encodeURIComponent(code.trim())}`)
+}
+
 export async function createMedicine(payload: SaveMedicinePayload): Promise<MedicineDetail> {
   return postData<MedicineDetail>('/medicines', payload)
 }

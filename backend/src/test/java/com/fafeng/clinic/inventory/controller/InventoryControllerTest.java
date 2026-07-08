@@ -39,7 +39,7 @@ class InventoryControllerTest {
                                 {
                                   "medicineId": %d,
                                   "quantity": 100,
-                                  "unit": "粒",
+                                  "unit": "片",
                                   "batchNo": "B20260708",
                                   "expiryDate": "2027-12-31",
                                   "purchasePrice": 0.5,
@@ -60,7 +60,7 @@ class InventoryControllerTest {
                                 {
                                   "patientId": %d,
                                   "prescriptionId": %d,
-                                  "items": [{"medicineId": %d, "quantity": 10, "unit": "粒"}]
+                                  "items": [{"medicineId": %d, "quantity": 10, "unit": "片"}]
                                 }
                                 """.formatted(patientId, prescriptionId, medicineId)))
                 .andExpect(status().isOk())
@@ -95,7 +95,7 @@ class InventoryControllerTest {
                                   "medicineId": %d,
                                   "batchId": %d,
                                   "quantityChange": -5,
-                                  "unit": "粒",
+                                  "unit": "片",
                                   "reason": "盘点损耗"
                                 }
                                 """.formatted(medicineId, batchId)))
@@ -125,7 +125,7 @@ class InventoryControllerTest {
                                 {
                                   "patientId": %d,
                                   "prescriptionId": %d,
-                                  "items": [{"medicineId": %d, "quantity": 10, "unit": "粒"}]
+                                  "items": [{"medicineId": %d, "quantity": 10, "unit": "片"}]
                                 }
                                 """.formatted(patientId, prescriptionId, medicineId)))
                 .andExpect(status().isOk())

@@ -77,6 +77,15 @@ class MedicineControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.barcode").value("6901234567890"));
 
+        mockMvc.perform(get("/api/medicines/by-barcode/6901234567890"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.name").value("阿莫西林胶囊"));
+
+        mockMvc.perform(get("/api/medicines/by-barcode/0000000000000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(404));
+
         mockMvc.perform(get("/api/medicines")
                         .param("keyword", "amxljn"))
                 .andExpect(status().isOk())

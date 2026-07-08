@@ -44,6 +44,11 @@ public class MedicineController {
         return Result.ok(medicineService.search(keyword, status, page, size));
     }
 
+    @GetMapping("/by-barcode/{code}")
+    public Result<MedicineListItemVO> findByBarcode(@PathVariable String code) {
+        return Result.ok(medicineService.findByBarcode(code));
+    }
+
     @PostMapping
     public Result<MedicineDetailVO> create(@Valid @RequestBody SaveMedicineRequest request) {
         return Result.ok(medicineService.create(request));
