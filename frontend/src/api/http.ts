@@ -18,8 +18,11 @@ http.interceptors.response.use(
     return response
   },
   (error) => {
+    const body = error.response?.data as ApiResult<unknown> | undefined
     if (error.response?.status === 401) {
       ElMessage.error('未登录或会话已过期')
+    } else if (body?.message) {
+      ElMessage.error(body.message)
     } else {
       ElMessage.error('网络错误，请稍后重试')
     }
@@ -40,6 +43,15 @@ export async function postData<T>(url: string, payload?: unknown): Promise<T> {
 export async function putData<T>(url: string, payload?: unknown): Promise<T> {
   const { data } = await http.put<ApiResult<T>>(url, payload)
   return data.data
+}
+
+export async function patchData<T>(url: string, payload?: unknown): Promise<T> {
+  const { data } = await http.patch<ApiResult<T>>(url, payload)
+  return data.data
+}
+
+export async function deleteData(url: string): Promise<void> {
+  await http.delete(url)
 }
 
 export default http

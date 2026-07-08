@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-@MapperScan("com.fafeng.clinic.system.mapper")
+@MapperScan({"com.fafeng.clinic.system.mapper", "com.fafeng.clinic.medicine.mapper"})
 public class ClinicApplication {
 
     public static void main(String[] args) {

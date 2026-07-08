@@ -4,6 +4,8 @@ import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/login/LoginView.vue'
 import SetupView from '@/views/setup/SetupView.vue'
 import SettingsView from '@/views/settings/SettingsView.vue'
+import MedicineListView from '@/views/medicine/MedicineListView.vue'
+import MedicineEditView from '@/views/medicine/MedicineEditView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -30,6 +32,18 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       component: SettingsView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/medicine',
+      name: 'medicine',
+      component: MedicineListView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/medicine/:id',
+      name: 'medicine-edit',
+      component: MedicineEditView,
       meta: { requiresAuth: true },
     },
   ],

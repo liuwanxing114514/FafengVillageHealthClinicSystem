@@ -24,13 +24,16 @@ onMounted(async () => {
       <template #header>
         <div class="header-row">
           <span class="title">发凤村卫生室诊所系统</span>
-          <el-button link type="primary" @click="router.push('/settings')">系统设置</el-button>
+          <div class="nav">
+            <el-button link type="primary" @click="router.push('/medicine')">药品管理</el-button>
+            <el-button link type="primary" @click="router.push('/settings')">系统设置</el-button>
+          </div>
         </div>
       </template>
-      <p class="version">v0.2 登录与基础模块</p>
+      <p class="version">v0.3 药品管理</p>
       <p class="hint">当前用户：{{ auth.operator ?? '—' }}</p>
       <p class="hint">后端健康检查：{{ backendStatus }}</p>
-      <p class="note">药品、患者等业务功能将在后续版本逐步开放。</p>
+      <p class="note">患者、处方等业务功能将在后续版本逐步开放。</p>
     </el-card>
   </main>
 </template>
@@ -52,6 +55,11 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.nav {
+  display: flex;
+  gap: 4px;
 }
 
 .title {
