@@ -139,6 +139,13 @@ async function onSave() {
   }
 }
 
+function goAiStructure() {
+  const query: Record<string, string> = {}
+  if (form.patientId) query.patientId = String(form.patientId)
+  if (visitId.value) query.visitId = String(visitId.value)
+  router.push({ path: '/ai', query })
+}
+
 function goBack() {
   if (form.patientId) {
     router.push(`/patient/${form.patientId}`)
@@ -186,6 +193,7 @@ onMounted(async () => {
         <div class="header-row">
           <span class="title">{{ isNew ? '新建病历' : '病历详情' }}</span>
           <div class="actions">
+            <el-button @click="goAiStructure">AI 整理</el-button>
             <el-button @click="goBack">返回患者</el-button>
             <el-button v-if="!isNew" @click="goPrescription">开处方</el-button>
             <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>

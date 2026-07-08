@@ -29,6 +29,9 @@ clinic:
     enabled: ${CLINIC_AI_ENABLED:false}
     provider: ${CLINIC_AI_PROVIDER:noop}
     deepseek-api-key: ${DEEPSEEK_API_KEY:}
+    deepseek-base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    deepseek-model: ${DEEPSEEK_MODEL:deepseek-chat}
+    visit-structure-prompt: ${CLINIC_AI_VISIT_PROMPT:}
     local-base-url: ${LOCAL_AI_BASE_URL:http://localhost:11434}
   voice:
     whisper-url: ${CLINIC_WHISPER_URL:}

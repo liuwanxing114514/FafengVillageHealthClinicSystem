@@ -20,6 +20,7 @@ import OutboundView from '@/views/inventory/OutboundView.vue'
 import FlowListView from '@/views/inventory/FlowListView.vue'
 import AlertListView from '@/views/inventory/AlertListView.vue'
 import AiAssistantView from '@/views/ai/AiAssistantView.vue'
+import AiDraftDetailView from '@/views/ai/AiDraftDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -118,6 +119,12 @@ const router = createRouter({
           name: 'ai-assistant',
           component: AiAssistantView,
           meta: { title: 'AI 助手' },
+        },
+        {
+          path: 'ai/drafts/:id',
+          name: 'ai-draft-detail',
+          component: AiDraftDetailView,
+          meta: { title: 'AI 草稿' },
         },
         {
           path: 'inventory/inbound',
