@@ -16,6 +16,7 @@ import InboundView from '@/views/inventory/InboundView.vue'
 import OutboundView from '@/views/inventory/OutboundView.vue'
 import FlowListView from '@/views/inventory/FlowListView.vue'
 import AlertListView from '@/views/inventory/AlertListView.vue'
+import AiAssistantView from '@/views/ai/AiAssistantView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -96,6 +97,12 @@ const router = createRouter({
       path: '/prescription/:id',
       name: 'prescription-edit',
       component: PrescriptionFormView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/ai',
+      name: 'ai-assistant',
+      component: AiAssistantView,
       meta: { requiresAuth: true },
     },
     {
