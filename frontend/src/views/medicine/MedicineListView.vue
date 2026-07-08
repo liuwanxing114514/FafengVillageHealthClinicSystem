@@ -90,6 +90,7 @@ onMounted(loadList)
           <span class="title">药品管理</span>
           <div class="actions">
             <el-button link type="primary" @click="router.push('/')">返回首页</el-button>
+            <el-button @click="router.push('/medicine/import')">Excel 导入</el-button>
             <el-button type="primary" @click="goCreate">新增药品</el-button>
           </div>
         </div>
