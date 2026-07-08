@@ -105,7 +105,23 @@ onMounted(load)
         </div>
       </template>
 
-      <p v-if="!prescriptionId" class="hint">请从处方页进入出库，或带参数 ?prescriptionId=</p>
+      <div v-if="!prescriptionId" class="empty-guide">
+        <el-empty description="出库需要关联一张已保存的处方">
+          <template #default>
+            <p class="guide-title">请按以下步骤操作：</p>
+            <ol class="guide-steps">
+              <li>在「患者」中找到患者，打开病历</li>
+              <li>保存病历后点击「开处方」，录入药品并保存</li>
+              <li>在处方页点击「出库」，系统会列出待出库药品</li>
+            </ol>
+            <p class="guide-note">出库必须关联患者和处方，不能从首页直接进入。</p>
+            <div class="guide-actions">
+              <el-button type="primary" @click="router.push('/patient')">去患者列表</el-button>
+              <el-button @click="router.push('/')">返回首页</el-button>
+            </div>
+          </template>
+        </el-empty>
+      </div>
 
       <template v-if="prescription">
         <p>患者：{{ prescription.patientName }} · 处方 #{{ prescription.id }}</p>
@@ -157,6 +173,10 @@ onMounted(load)
 <style scoped>
 .page { min-height: 100vh; padding: 24px; }
 .header-row { display: flex; justify-content: space-between; }
-.hint { color: #909399; }
+.empty-guide { padding: 24px 0; }
+.guide-title { margin: 0 0 8px; color: #303133; font-weight: 500; text-align: left; }
+.guide-steps { margin: 0 0 12px; padding-left: 20px; color: #606266; line-height: 1.8; text-align: left; }
+.guide-note { margin: 0 0 16px; color: #909399; font-size: 13px; text-align: left; }
+.guide-actions { display: flex; gap: 12px; justify-content: center; }
 .batch-panel { margin-top: 20px; }
 </style>
