@@ -74,6 +74,17 @@ public class VisitService {
         return getDetail(id);
     }
 
+    @Transactional
+    public void delete(Long id) {
+        ClinicVisit visit = requireVisit(id);
+        visit.setStatus(ClinicVisit.STATUS_VOID);
+        visit.setUpdatedAt(OffsetDateTime.now());
+        visitMapper.updateById(visit);
+
+        auditLogService.log("DELETE_VISIT", "clinic_visit", visit.getId(),
+                "{\"patientId\":" + visit.getPatientId() + "}");
+    }
+
     private ClinicVisit requireVisit(Long id) {
         ClinicVisit visit = visitMapper.selectById(id);
         if (visit == null || !ClinicVisit.STATUS_ACTIVE.equals(visit.getStatus())) {

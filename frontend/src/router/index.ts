@@ -9,6 +9,8 @@ import MedicineEditView from '@/views/medicine/MedicineEditView.vue'
 import PatientListView from '@/views/patient/PatientListView.vue'
 import PatientDetailView from '@/views/patient/PatientDetailView.vue'
 import VisitFormView from '@/views/visit/VisitFormView.vue'
+import PrescriptionFormView from '@/views/prescription/PrescriptionFormView.vue'
+import PrescriptionPrintView from '@/views/prescription/PrescriptionPrintView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -65,6 +67,24 @@ const router = createRouter({
       path: '/visit/:id',
       name: 'visit',
       component: VisitFormView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/prescription/new',
+      name: 'prescription-new',
+      component: PrescriptionFormView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/prescription/:id/print',
+      name: 'prescription-print',
+      component: PrescriptionPrintView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/prescription/:id',
+      name: 'prescription-edit',
+      component: PrescriptionFormView,
       meta: { requiresAuth: true },
     },
   ],

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { createPatient, getPatient, listPatientVisits, updatePatient } from '@/api/patient'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { createPatient, deletePatient, getPatient, listPatientVisits, updatePatient } from '@/api/patient'
+import { deleteVisit } from '@/api/visit'
 import type { PatientDetail } from '@/types/patient'
 import type { VisitListItem } from '@/types/visit'
 
@@ -91,6 +92,39 @@ function goVisit(id: number) {
   router.push(`/visit/${id}`)
 }
 
+async function onDeletePatient() {
+  if (!patientId.value || !detail.value) return
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除患者「${detail.value.name}」吗？删除后列表不再显示，历史病历仍保留。`,
+      '删除确认',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' },
+    )
+    await deletePatient(patientId.value)
+    ElMessage.success('已删除')
+    router.push('/patient')
+  } catch {
+    // cancelled or failed
+  }
+}
+
+async function onDeleteVisit(row: VisitListItem) {
+  try {
+    await ElMessageBox.confirm('确定要删除这条病历吗？', '删除确认', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+    })
+    await deleteVisit(row.id)
+    ElMessage.success('已删除')
+    if (patientId.value) {
+      visits.value = await listPatientVisits(patientId.value)
+    }
+  } catch {
+    // cancelled or failed
+  }
+}
+
 onMounted(loadDetail)
 </script>
 
@@ -144,6 +178,9 @@ onMounted(loadDetail)
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="3" />
         </el-form-item>
+        <el-form-item v-if="!isNew">
+          <el-button type="danger" plain @click="onDeletePatient">删除患者</el-button>
+        </el-form-item>
       </el-form>
 
       <template v-if="!isNew && detail">
@@ -158,9 +195,10 @@ onMounted(loadDetail)
           </el-table-column>
           <el-table-column prop="chiefComplaint" label="主诉" min-width="160" show-overflow-tooltip />
           <el-table-column prop="diagnosis" label="诊断" min-width="160" show-overflow-tooltip />
-          <el-table-column label="操作" width="100">
+          <el-table-column label="操作" width="140">
             <template #default="{ row }">
               <el-button link type="primary" @click="goVisit(row.id)">查看</el-button>
+              <el-button link type="danger" @click="onDeleteVisit(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>

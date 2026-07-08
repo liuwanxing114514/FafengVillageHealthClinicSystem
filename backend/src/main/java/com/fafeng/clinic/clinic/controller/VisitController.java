@@ -5,6 +5,7 @@ import com.fafeng.clinic.clinic.service.VisitService;
 import com.fafeng.clinic.clinic.vo.VisitDetailVO;
 import com.fafeng.clinic.common.Result;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,5 +39,11 @@ public class VisitController {
             @PathVariable Long id,
             @Valid @RequestBody SaveVisitRequest request) {
         return Result.ok(visitService.update(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        visitService.delete(id);
+        return Result.ok();
     }
 }

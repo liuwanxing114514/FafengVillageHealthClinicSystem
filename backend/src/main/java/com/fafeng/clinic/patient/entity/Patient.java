@@ -12,6 +12,7 @@ public class Patient {
 
     public static final String STATUS_ACTIVE = "ACTIVE";
     public static final String STATUS_INACTIVE = "INACTIVE";
+    public static final String STATUS_DELETED = "DELETED";
 
     public static final String GENDER_MALE = "M";
     public static final String GENDER_FEMALE = "F";

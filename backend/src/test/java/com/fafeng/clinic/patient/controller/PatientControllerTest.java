@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -108,6 +109,81 @@ class PatientControllerTest {
         mockMvc.perform(get("/api/patients/" + patientId + "/visits"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)));
+    }
+
+    @Test
+    @WithMockUser(username = "admin")
+    void searchByAddressAndDeletePatient() throws Exception {
+        String createResponse = mockMvc.perform(post("/api/patients")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "赵六",
+                                  "gender": "M",
+                                  "age": 30,
+                                  "phone": "13600004444",
+                                  "address": "发凤村三组",
+                                  "remark": "老村民"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long id = objectMapper.readTree(createResponse).path("data").path("id").asLong();
+
+        mockMvc.perform(get("/api/patients?address=三组&remark=老村"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.records", hasSize(1)));
+
+        mockMvc.perform(delete("/api/patients/" + id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0));
+
+        mockMvc.perform(get("/api/patients/" + id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(404));
+    }
+
+    @Test
+    @WithMockUser(username = "admin")
+    void deleteVisit() throws Exception {
+        String patientResponse = mockMvc.perform(post("/api/patients")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "孙七",
+                                  "gender": "F",
+                                  "age": 28
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long patientId = objectMapper.readTree(patientResponse).path("data").path("id").asLong();
+
+        String visitResponse = mockMvc.perform(post("/api/visits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "patientId": %d,
+                                  "diagnosis": "待删除"
+                                }
+                                """.formatted(patientId)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long visitId = objectMapper.readTree(visitResponse).path("data").path("id").asLong();
+
+        mockMvc.perform(delete("/api/visits/" + visitId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0));
+
+        mockMvc.perform(get("/api/patients/" + patientId + "/visits"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(0)));
     }
 
     @Test
