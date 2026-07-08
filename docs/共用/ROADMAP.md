@@ -58,13 +58,14 @@
 
 - Spring Boot 后端可启动。
 - Vue 前端可启动。
-- PostgreSQL 可连接。
-- Flyway 可执行。
+- PostgreSQL 可连接（**使用 `pgvector/pgvector:pg16` 镜像**）。
+- Flyway 可执行；**首条迁移 `V0` 启用 `vector`、`pg_trgm` 扩展**。
 
 **需要预留**（本版只做目录/配置占位）：
 
 - `.env.example` 中 AI 相关配置项注释。
 - `backend` 中 `ai`、`agent` 空包或占位包。
+- `db/migration/V0__enable_extensions.sql`（扩展一次装齐，v2.2 不再装插件）。
 
 ---
 
@@ -495,7 +496,7 @@
 
 ## 第六期：RAG 知识库（v2.2–v2.3）
 
-**前置依赖**：v1.0、PostgreSQL pgvector 扩展
+**前置依赖**：v1.0（**pgvector 已在 v0.1 启用，本版只建表**）
 
 目标：辅助参考，**不替代诊断**。
 
@@ -532,7 +533,7 @@
 | `ai` / `agent` 后端包 | v0.1 | 空包或接口占位 |
 | `ai_draft` 表 | v0.9 | 草稿统一入口 |
 | `ai_draft.draft_type` / `status` | v0.9 | 区分入库/病历/出库/查询草稿 |
-| pgvector 扩展 | v0.1 docker-compose | 可先启用扩展，v2.2 再用 |
+| pgvector + pg_trgm 扩展 | **v0.1** Flyway V0 + pgvector 镜像 | v0.1 安装，v2.2 直接用；v0.3 可用 pg_trgm 搜索 |
 | 首页 AI 助手入口 | v0.9 | 占位页，v2.0 实装 |
 | 处方 → 待出库清单数据流 | v0.5 | 数据结构支持关联，v2.1 自动化 |
 | 上传目录 `uploads/images` | v0.1 | v1.4 OCR 使用 |

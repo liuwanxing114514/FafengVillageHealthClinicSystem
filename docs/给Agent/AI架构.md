@@ -106,7 +106,7 @@
 | DeepSeek API | v1.3 | 后端 HTTP 调用，无独立容器 |
 | Whisper | v1.1 | `whisper-service` 容器 |
 | PaddleOCR | v1.4 | `ocr-service` 容器 |
-| pgvector | v2.2 | PostgreSQL 扩展 |
+| pgvector | v0.1 | PostgreSQL 扩展（`vector`），V0 迁移启用 |
 
 ---
 

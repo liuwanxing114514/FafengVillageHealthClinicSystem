@@ -142,7 +142,7 @@ docker compose logs backend | Select-String -Pattern "Flyway"
 | **v1.6** | 需纸质处方样本；可能增加模板配置 | — |
 | **v2.0** | 依赖 v1.3；实装 AI 助手页 | 关闭 AI 时不影响 |
 | **v2.1** | 仅程序更新 | — |
-| **v2.2** | 确认 pgvector 扩展已启用；首次向量化可能耗时 | 是，不影响 |
+| **v2.2** | 直接建 visit_embedding 表（扩展 v0.1 已装） | 是，不影响 |
 | **v2.3** | 仅程序更新 | — |
 
 ### .env 合并示例
