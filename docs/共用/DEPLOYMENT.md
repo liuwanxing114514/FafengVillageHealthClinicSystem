@@ -52,8 +52,9 @@ docker compose up -d --build
 ```
 
 5. 浏览器访问前端地址，完成首次设置密码。
-6. 配置 Windows 任务计划，每日执行 `scripts\backup.ps1`。
-7. 验收：登录、药品、入库、出库、病历、处方打印、断网可用、关闭 AI 无报错。
+6. （可选）导入演示数据：`.\scripts\seed-demo.ps1`
+7. 配置 Windows 任务计划，每日执行 `scripts\backup.ps1`。
+8. 验收：登录、药品、入库、出库、病历、处方打印、断网可用、关闭 AI 无报错。
 
 ---
 
@@ -61,10 +62,10 @@ docker compose up -d --build
 
 ### 自动备份
 
-- 脚本：`D:\clinic\scripts\backup.ps1`
+- 脚本：`D:\clinic\scripts\backup.ps1`（项目根目录执行 `.\scripts\backup.ps1`）
 - 建议时间：每日凌晨 3:00
-- 保留：最近 7 天
-- 输出目录：`D:\clinic-data\backup\`
+- 保留：最近 7 天（`-KeepDays` 可调）
+- 输出目录：`D:\clinic-data\backup\`（zip 包，内含 `postgres.sql`、uploads、`.env`）
 
 ### 备份内容
 
@@ -89,15 +90,18 @@ cd D:\clinic
 
 ## 四、恢复
 
-1. `docker compose down`
-2. 解压指定日期的备份包
-3. 恢复 PostgreSQL dump 到数据库
-4. 覆盖 `D:\clinic-data\uploads\`
-5. 如需恢复配置，合并 `.env`（注意勿覆盖新版本的配置项说明）
-6. `docker compose up -d`
-7. 检查库存、病历、上传文件是否正常
+1. `docker compose stop backend frontend`（或 `docker compose down`）
+2. 执行恢复脚本：
 
-详细步骤见 `scripts\restore.ps1`（v1.0 交付物）。
+```powershell
+cd D:\clinic
+.\scripts\restore.ps1 -BackupZip "D:\clinic-data\backup\clinic-backup-YYYYMMDD-HHMMSS.zip"
+```
+
+3. 按提示输入 `YES` 确认
+4. 脚本自动恢复 PostgreSQL、uploads，并 `docker compose up -d`
+5. 若备份含 `.env`，会另存为 `.env.restored-*`，请手动对比合并
+6. 检查库存、病历、上传文件是否正常
 
 ---
 

@@ -24,6 +24,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    environment:
+      CLINIC_DB_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      CLINIC_AI_ENABLED: ${CLINIC_AI_ENABLED:-false}
+      CLINIC_AI_PROVIDER: ${CLINIC_AI_PROVIDER:-noop}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      LOCAL_AI_BASE_URL: ${LOCAL_AI_BASE_URL:-http://localhost:11434}
     volumes:
       - ${CLINIC_DATA_DIR:-./clinic-data}/uploads:/app/uploads
     ports:
