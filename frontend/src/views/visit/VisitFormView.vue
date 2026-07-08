@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPatient } from '@/api/patient'
-import { createVisit, getVisit, updateVisit } from '@/api/visit'
+import { createVisit, deleteVisit, getVisit, updateVisit } from '@/api/visit'
 
 const route = useRoute()
 const router = useRouter()
@@ -134,6 +134,22 @@ function goBack() {
   }
 }
 
+async function onDelete() {
+  if (!visitId.value) return
+  try {
+    await ElMessageBox.confirm('确定要删除这条病历吗？', '删除确认', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+    })
+    await deleteVisit(visitId.value)
+    ElMessage.success('已删除')
+    goBack()
+  } catch {
+    // cancelled or failed
+  }
+}
+
 onMounted(loadVisit)
 </script>
 
@@ -200,6 +216,9 @@ onMounted(loadVisit)
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="2" />
+        </el-form-item>
+        <el-form-item v-if="!isNew">
+          <el-button type="danger" plain @click="onDelete">删除病历</el-button>
         </el-form-item>
       </el-form>
     </el-card>

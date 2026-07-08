@@ -1,4 +1,4 @@
-import { getData, postData, putData } from '@/api/http'
+import { deleteData, getData, postData, putData } from '@/api/http'
 import type { SaveVisitPayload, VisitDetail } from '@/types/visit'
 
 export async function getVisit(id: number): Promise<VisitDetail> {
@@ -11,4 +11,8 @@ export async function createVisit(payload: SaveVisitPayload): Promise<VisitDetai
 
 export async function updateVisit(id: number, payload: SaveVisitPayload): Promise<VisitDetail> {
   return putData<VisitDetail>(`/visits/${id}`, payload)
+}
+
+export async function deleteVisit(id: number): Promise<void> {
+  await deleteData(`/visits/${id}`)
 }

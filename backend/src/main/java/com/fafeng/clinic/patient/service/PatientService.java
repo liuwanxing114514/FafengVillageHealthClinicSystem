@@ -6,6 +6,7 @@ import com.fafeng.clinic.common.BusinessException;
 import com.fafeng.clinic.common.ErrorCode;
 import com.fafeng.clinic.common.IdCardUtils;
 import com.fafeng.clinic.medicine.vo.PageVO;
+import com.fafeng.clinic.patient.dto.PatientSearchQuery;
 import com.fafeng.clinic.patient.dto.SavePatientRequest;
 import com.fafeng.clinic.patient.entity.Patient;
 import com.fafeng.clinic.patient.mapper.PatientMapper;
@@ -30,14 +31,22 @@ public class PatientService {
         this.auditLogService = auditLogService;
     }
 
-    public PageVO<PatientListItemVO> search(String keyword, int page, int size) {
+    public PageVO<PatientListItemVO> search(PatientSearchQuery query, int page, int size) {
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 100);
-        String normalizedKeyword = keyword == null ? "" : keyword.trim();
+        PatientSearchQuery normalized = normalizeQuery(query);
 
         var result = patientMapper.searchPage(
                 new Page<>(safePage, safeSize),
-                normalizedKeyword.isEmpty() ? null : normalizedKeyword);
+                emptyToNull(normalized.keyword()),
+                emptyToNull(normalized.name()),
+                emptyToNull(normalized.phone()),
+                emptyToNull(normalized.idCard()),
+                emptyToNull(normalized.address()),
+                emptyToNull(normalized.gender()),
+                emptyToNull(normalized.remark()),
+                normalized.ageMin(),
+                normalized.ageMax());
 
         List<PatientListItemVO> records = result.getRecords().stream()
                 .map(this::toListItem)
@@ -73,6 +82,17 @@ public class PatientService {
         auditLogService.log("UPDATE_PATIENT", "patient", patient.getId(),
                 "{\"name\":\"" + escapeJson(patient.getName()) + "\"}");
         return getDetail(id);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        Patient patient = requirePatient(id);
+        patient.setStatus(Patient.STATUS_DELETED);
+        patient.setUpdatedAt(OffsetDateTime.now());
+        patientMapper.updateById(patient);
+
+        auditLogService.log("DELETE_PATIENT", "patient", patient.getId(),
+                "{\"name\":\"" + escapeJson(patient.getName()) + "\"}");
     }
 
     public Patient requirePatient(Long id) {
@@ -135,7 +155,7 @@ public class PatientService {
         }
         LambdaQueryWrapper<Patient> wrapper = new LambdaQueryWrapper<Patient>()
                 .eq(Patient::getIdCard, idCard)
-                .eq(Patient::getStatus, Patient.STATUS_ACTIVE);
+                .ne(Patient::getStatus, Patient.STATUS_DELETED);
         if (excludeId != null) {
             wrapper.ne(Patient::getId, excludeId);
         }
@@ -197,5 +217,33 @@ public class PatientService {
 
     private String escapeJson(String value) {
         return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private PatientSearchQuery normalizeQuery(PatientSearchQuery query) {
+        if (query == null) {
+            return new PatientSearchQuery(null, null, null, null, null, null, null, null, null);
+        }
+        String gender = emptyToNull(query.gender());
+        if (gender != null) {
+            gender = gender.toUpperCase();
+        }
+        return new PatientSearchQuery(
+                emptyToNull(query.keyword()),
+                emptyToNull(query.name()),
+                emptyToNull(query.phone()),
+                emptyToNull(query.idCard()),
+                emptyToNull(query.address()),
+                gender,
+                emptyToNull(query.remark()),
+                query.ageMin(),
+                query.ageMax());
+    }
+
+    private String emptyToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
