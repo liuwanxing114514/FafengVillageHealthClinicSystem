@@ -34,6 +34,16 @@ public class MedicineImportPreviewCache {
         return cached.rows();
     }
 
+    /** 原子取出并删除，防止并发 confirm 重复导入 */
+    public List<MedicineImportParsedRow> take(String previewId) {
+        cleanupExpired();
+        CachedPreview cached = cache.remove(previewId);
+        if (cached == null) {
+            return null;
+        }
+        return cached.rows();
+    }
+
     public void remove(String previewId) {
         cache.remove(previewId);
     }

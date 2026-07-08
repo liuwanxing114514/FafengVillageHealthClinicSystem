@@ -79,6 +79,12 @@ class MedicineImportControllerTest {
         mockMvc.perform(get("/api/medicines/by-barcode/" + barcode))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("Excel导入药" + suffix));
+
+        mockMvc.perform(post("/api/import/medicine/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"previewId\":\"" + previewId + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(400));
     }
 
     @Test
