@@ -7,3 +7,10 @@ spring:
     url: jdbc:postgresql://localhost:5432/postgres
     username: postgres
     password: admin
+
+server:
+  servlet:
+    session:
+      cookie:
+        same-site: lax
+        http-only: true
