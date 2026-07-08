@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ClinicApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="clinic-backend" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.fafeng.clinic.ClinicApplication" />
+  <option name="ACTIVE_PROFILES" value="dev" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

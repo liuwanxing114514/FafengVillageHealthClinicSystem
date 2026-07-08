@@ -8,40 +8,44 @@
 - 前端：Vue 3 + TypeScript + Vite + Element Plus
 - 数据库：PostgreSQL 16（pgvector 镜像）
 
+## 配置与环境
+
+后端使用 **Spring Profile**，由 Maven 打包时切换：
+
+| Profile | 用途 | 打包命令 |
+| --- | --- | --- |
+| `dev` | 本地 IDEA 开发（默认） | `mvn package` 或 IDEA Run（Active profiles: `dev`） |
+| `docker` | Docker Compose | `mvn -Pdocker package` |
+| `prod` | 诊所机器部署 | `mvn -Pprod package` |
+
+配置文件：
+
+- `application.yml` — 公共配置
+- `application-dev.yml` — 本地数据库（postgres / admin）
+- `application-docker.yml` — 容器内网数据库
+- `application-prod.yml` — 生产部署（密码可用 `CLINIC_DB_PASSWORD` 覆盖）
+
+`.env` **仅 Docker Compose 可选**（改端口、数据库密码、数据目录）；本地 IDEA 开发不需要。不创建 `.env` 也能 `docker compose up`，会用 `docker-compose.yml` 里的默认值。
+
 ## 快速启动（Docker）
 
 ```powershell
-# 1. 复制环境变量
-copy .env.example .env
-# 编辑 .env，至少修改 POSTGRES_PASSWORD
-
-# 2. 启动全部服务
+# 可选：copy .env.example .env  # 仅当需要改密码或端口时
 docker compose up -d --build
-
-# 3. 验证
-curl http://localhost:8080/api/health
-# 浏览器访问 http://localhost
 ```
 
-## 本地开发（不用 Docker 跑应用）
+后端镜像构建时已使用 `-Pdocker`，无需再传 `SPRING_DATASOURCE_*`。
 
-### 前置
+## 本地开发（IDEA）
 
-- JDK 21、Maven 3.9+
-- Node.js 22+
-- PostgreSQL（推荐 `pgvector/pgvector:pg16` 容器仅跑数据库）
-
-### 数据库
-
-```powershell
-docker run -d --name clinic-pg -e POSTGRES_DB=clinic -e POSTGRES_USER=clinic -e POSTGRES_PASSWORD=change_me -p 5432:5432 pgvector/pgvector:pg16
-```
-
-### 后端
+1. JDK 21 + Maven 导入项目
+2. Run `ClinicApplication`，**Active profiles** 填 `dev`（或使用 `.run/ClinicApplication.run.xml`）
+3. 修改 `application-dev.yml` 中的数据库连接（默认 postgres / admin）
+4. 验证：`http://localhost:8080/api/health`
 
 ```powershell
-cd backend
-mvn spring-boot:run
+# 或命令行
+mvn -pl backend spring-boot:run
 ```
 
 ### 前端

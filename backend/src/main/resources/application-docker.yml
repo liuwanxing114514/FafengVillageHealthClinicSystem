@@ -1,0 +1,9 @@
+# Docker Compose 内网（打包：mvn -Pdocker package）
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://postgres:5432/clinic
+    username: clinic
+    password: change_me

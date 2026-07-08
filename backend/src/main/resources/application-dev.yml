@@ -1,0 +1,9 @@
+# 本地开发（IDEA 运行配置 Active profiles 填 dev，或 mvn spring-boot:run）
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: admin

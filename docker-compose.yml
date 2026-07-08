@@ -17,17 +17,13 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: clinic-backend
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-clinic}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-clinic}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
-      CLINIC_AI_ENABLED: ${CLINIC_AI_ENABLED:-false}
-      CLINIC_AI_PROVIDER: ${CLINIC_AI_PROVIDER:-noop}
     volumes:
       - ${CLINIC_DATA_DIR:-./clinic-data}/uploads:/app/uploads
     ports:
