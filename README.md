@@ -71,7 +71,7 @@ npm run dev
 
 见 [`docs/共用/ROADMAP.md`](docs/共用/ROADMAP.md)。
 
-**当前进度**：`develop` 已完成 v0.4（患者/病历）。v0.5–v1.0 见 [`docs/给Agent/进度清单-v0.5-v1.0.md`](docs/给Agent/进度清单-v0.5-v1.0.md)。
+**当前进度**：`develop` 已完成 v0.5（处方/打印）。v0.6–v1.0 见 [`docs/给Agent/进度清单-v0.5-v1.0.md`](docs/给Agent/进度清单-v0.5-v1.0.md)。
 
 ## Agent / Cursor 开发提示
 
@@ -79,16 +79,46 @@ npm run dev
 
 | MCP | 用途 | 典型场景 |
 | --- | --- | --- |
-| **user-jetbrains** | IntelliJ IDEA 集成 | 运行 `ClinicApplication`、查看编译错误、`mvn test`、重构、符号搜索 |
-| **user-datagrip** | DataGrip 数据库 | 列出连接、`execute_sql_query` 验证 Flyway 迁移结果、预览表数据、检查索引 |
+| **user-jetbrains** | IntelliJ IDEA 集成 | `mvn test`、查看编译错误、运行 `ClinicApplication`、符号搜索 |
+| **user-datagrip** | DataGrip 数据库 | 验证 Flyway 迁移、查表数据、执行 SQL |
+
+### DataGrip MCP
+
+DataGrip MCP 绑定的是 **DataGrip 里已配置的数据源**，与 Git 仓库路径无关。只要 DataGrip 已打开任意项目（如 `C:/Users/lwx/DataGripProjects/test`），即可调用。
+
+```text
+list_database_connections  → 获取 connectionId（如 postgres@localhost）
+execute_sql_query          → 必填 connectionId、databaseName、schemaName、queryText
+```
+
+本地 dev 连接参数（见 `application-dev.yml`）：
+
+| 参数 | 值 |
+| --- | --- |
+| `projectPath` | `C:/Users/lwx/DataGripProjects/test`（或当前打开的 DG 项目） |
+| `connectionId` | `list_database_connections` 返回的 `postgres@localhost` id |
+| `databaseName` | `postgres` |
+| `schemaName` | `public` |
+
+### IDEA MCP 跑 Maven
+
+使用 `execute_terminal_command` 时，**需手动设置 JAVA_HOME**（MCP 终端不会自动继承 IDEA 项目 JDK）：
+
+```powershell
+$env:JAVA_HOME='C:\Users\lwx\.jdks\corretto-21.0.11'
+cd 'D:\xiangmu\发凤村卫生室'
+mvn -pl backend test
+```
+
+Maven 路径示例：`D:\soft\apache-maven-3.9.11-bin\apache-maven-3.9.11\bin\mvn.cmd`
+
+也可用 `get_project_problems` 查编译错误；或在 IDEA 中为 `backend test` 建 Run Configuration，用 `execute_run_configuration` 执行。
 
 **建议流程**：
 
-1. 改 Flyway 迁移后 → DataGrip 执行 SQL 或启动应用验证表结构
-2. 改 Java 后 → JetBrains `build_project` / `get_project_problems` 查编译问题
-3. 自测前 → DataGrip 查 `prescription`、`inventory_flow` 等表数据是否正确
-
-本地 dev 数据库默认见 `application-dev.yml`（PostgreSQL，库名 `clinic`）。
+1. 改 Flyway 迁移后 → DataGrip MCP 查 `information_schema.tables` 或启动应用验证
+2. 改 Java 后 → IDEA MCP `get_project_problems` 或 `mvn test`（带 JAVA_HOME）
+3. 自测后 → DataGrip MCP 查 `inventory_batch`、`inventory_flow` 等表数据
 
 ## 文档
 
