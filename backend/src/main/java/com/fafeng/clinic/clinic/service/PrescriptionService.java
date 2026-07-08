@@ -21,6 +21,7 @@ import com.fafeng.clinic.medicine.service.MedicineService;
 import com.fafeng.clinic.medicine.vo.MedicineDetailVO;
 import com.fafeng.clinic.patient.entity.Patient;
 import com.fafeng.clinic.patient.service.PatientService;
+import com.fafeng.clinic.ai.service.QuickPhraseService;
 import com.fafeng.clinic.system.service.AuditLogService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,19 +42,22 @@ public class PrescriptionService {
     private final PatientService patientService;
     private final MedicineService medicineService;
     private final AuditLogService auditLogService;
+    private final QuickPhraseService quickPhraseService;
 
     public PrescriptionService(PrescriptionMapper prescriptionMapper,
                                PrescriptionItemMapper prescriptionItemMapper,
                                ClinicVisitMapper visitMapper,
                                PatientService patientService,
                                MedicineService medicineService,
-                               AuditLogService auditLogService) {
+                               AuditLogService auditLogService,
+                               QuickPhraseService quickPhraseService) {
         this.prescriptionMapper = prescriptionMapper;
         this.prescriptionItemMapper = prescriptionItemMapper;
         this.visitMapper = visitMapper;
         this.patientService = patientService;
         this.medicineService = medicineService;
         this.auditLogService = auditLogService;
+        this.quickPhraseService = quickPhraseService;
     }
 
     @Transactional
@@ -197,6 +201,7 @@ public class PrescriptionService {
             item.setSortOrder(sortOrder++);
             item.setCreatedAt(OffsetDateTime.now());
             prescriptionItemMapper.insert(item);
+            quickPhraseService.recordPrescriptionUsage(item.getUsage());
         }
     }
 

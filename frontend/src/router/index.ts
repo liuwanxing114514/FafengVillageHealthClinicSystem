@@ -6,6 +6,7 @@ import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/login/LoginView.vue'
 import SetupView from '@/views/setup/SetupView.vue'
 import SettingsView from '@/views/settings/SettingsView.vue'
+import QuickPhraseManageView from '@/views/settings/QuickPhraseManageView.vue'
 import MedicineListView from '@/views/medicine/MedicineListView.vue'
 import MedicineEditView from '@/views/medicine/MedicineEditView.vue'
 import MedicineImportView from '@/views/medicine/MedicineImportView.vue'
@@ -57,6 +58,12 @@ const router = createRouter({
           name: 'settings',
           component: SettingsView,
           meta: { title: '设置' },
+        },
+        {
+          path: 'settings/quick-phrases',
+          name: 'quick-phrases',
+          component: QuickPhraseManageView,
+          meta: { title: '快捷语' },
         },
         {
           path: 'medicine',

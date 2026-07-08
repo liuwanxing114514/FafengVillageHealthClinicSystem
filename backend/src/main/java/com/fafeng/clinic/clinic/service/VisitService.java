@@ -9,6 +9,7 @@ import com.fafeng.clinic.common.BusinessException;
 import com.fafeng.clinic.common.ErrorCode;
 import com.fafeng.clinic.patient.entity.Patient;
 import com.fafeng.clinic.patient.service.PatientService;
+import com.fafeng.clinic.ai.service.QuickPhraseService;
 import com.fafeng.clinic.system.service.AuditLogService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,13 +23,16 @@ public class VisitService {
     private final ClinicVisitMapper visitMapper;
     private final PatientService patientService;
     private final AuditLogService auditLogService;
+    private final QuickPhraseService quickPhraseService;
 
     public VisitService(ClinicVisitMapper visitMapper,
                         PatientService patientService,
-                        AuditLogService auditLogService) {
+                        AuditLogService auditLogService,
+                        QuickPhraseService quickPhraseService) {
         this.visitMapper = visitMapper;
         this.patientService = patientService;
         this.auditLogService = auditLogService;
+        this.quickPhraseService = quickPhraseService;
     }
 
     public List<VisitListItemVO> listByPatient(Long patientId) {
@@ -49,6 +53,7 @@ public class VisitService {
         visit.setUpdatedAt(OffsetDateTime.now());
         visitMapper.insert(visit);
 
+        quickPhraseService.recordFromVisit(visit);
         auditLogService.log("CREATE_VISIT", "clinic_visit", visit.getId(),
                 "{\"patientId\":" + patient.getId() + "}");
         return getDetail(visit.getId());
@@ -69,6 +74,7 @@ public class VisitService {
         visit.setUpdatedAt(OffsetDateTime.now());
         visitMapper.updateById(visit);
 
+        quickPhraseService.recordFromVisit(visit);
         auditLogService.log("UPDATE_VISIT", "clinic_visit", visit.getId(),
                 "{\"patientId\":" + visit.getPatientId() + "}");
         return getDetail(id);

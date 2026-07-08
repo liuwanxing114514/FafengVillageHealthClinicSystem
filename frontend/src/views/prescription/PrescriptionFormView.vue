@@ -12,6 +12,7 @@ import {
   voidPrescription,
 } from '@/api/prescription'
 import { useTabTitle } from '@/composables/useTabTitle'
+import QuickPhraseChips from '@/components/visit/QuickPhraseChips.vue'
 import type { MedicineListItem } from '@/types/medicine'
 import type { PrescriptionItem } from '@/types/prescription'
 
@@ -302,7 +303,10 @@ onMounted(loadForm)
         <el-select v-model="item.unit" placeholder="单位" style="width: 90px">
           <el-option v-for="u in unitOptions(item)" :key="u" :label="u" :value="u" />
         </el-select>
-        <el-input v-model="item.usage" placeholder="用法" style="flex: 1" />
+        <div class="usage-field" style="flex: 1">
+          <el-input v-model="item.usage" placeholder="用法" />
+          <QuickPhraseChips v-model="item.usage" field-key="prescription_usage" />
+        </div>
         <el-button type="danger" link @click="removeItem(index)">删除</el-button>
       </div>
 
@@ -357,9 +361,13 @@ onMounted(loadForm)
 .item-row {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 10px;
   flex-wrap: wrap;
+}
+
+.usage-field {
+  min-width: 180px;
 }
 
 .void-row {
