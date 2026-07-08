@@ -11,6 +11,10 @@ import PatientDetailView from '@/views/patient/PatientDetailView.vue'
 import VisitFormView from '@/views/visit/VisitFormView.vue'
 import PrescriptionFormView from '@/views/prescription/PrescriptionFormView.vue'
 import PrescriptionPrintView from '@/views/prescription/PrescriptionPrintView.vue'
+import InboundView from '@/views/inventory/InboundView.vue'
+import OutboundView from '@/views/inventory/OutboundView.vue'
+import FlowListView from '@/views/inventory/FlowListView.vue'
+import AlertListView from '@/views/inventory/AlertListView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -85,6 +89,30 @@ const router = createRouter({
       path: '/prescription/:id',
       name: 'prescription-edit',
       component: PrescriptionFormView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/inventory/inbound',
+      name: 'inventory-inbound',
+      component: InboundView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/inventory/outbound',
+      name: 'inventory-outbound',
+      component: OutboundView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/inventory/flows',
+      name: 'inventory-flows',
+      component: FlowListView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/inventory/alerts',
+      name: 'inventory-alerts',
+      component: AlertListView,
       meta: { requiresAuth: true },
     },
   ],
