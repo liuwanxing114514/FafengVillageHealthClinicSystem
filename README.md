@@ -34,7 +34,27 @@
 docker compose up -d --build
 ```
 
-后端镜像构建时已使用 `-Pdocker`，无需再传 `SPRING_DATASOURCE_*`。
+浏览器访问 http://localhost（或 `.env` 中 `FRONTEND_PORT`），首次打开进入 `/setup` 设置密码。
+
+可选导入演示数据（含示例药品、患者、临期/不足预警）：
+
+```powershell
+.\scripts\seed-demo.ps1
+```
+
+### 备份与恢复
+
+```powershell
+# 每日备份（建议任务计划 03:00 执行）
+.\scripts\backup.ps1
+
+# 从 zip 恢复（会覆盖当前库与 uploads）
+.\scripts\restore.ps1 -BackupZip ".\clinic-data\backup\clinic-backup-YYYYMMDD-HHMMSS.zip"
+```
+
+详见 [`docs/共用/DEPLOYMENT.md`](docs/共用/DEPLOYMENT.md)。
+
+后端镜像构建时已使用 `-Pdocker`，数据库密码通过 `.env` 中 `POSTGRES_PASSWORD` 与后端 `CLINIC_DB_PASSWORD` 同步。
 
 ## 本地开发（IDEA）
 
@@ -64,14 +84,14 @@ npm run dev
 | --- | --- |
 | `backend/` | Spring Boot 模块化单体 |
 | `frontend/` | Vue SPA |
-| `scripts/` | 备份/恢复脚本（v1.0 实装） |
+| `scripts/` | 备份/恢复/演示数据脚本 |
 | `docs/` | 设计文档与开发指南 |
 
 ## 版本规划
 
 见 [`docs/共用/ROADMAP.md`](docs/共用/ROADMAP.md)。
 
-**当前进度**：`develop` 已完成 v0.5（处方/打印）。v0.6–v1.0 见 [`docs/给Agent/进度清单-v0.5-v1.0.md`](docs/给Agent/进度清单-v0.5-v1.0.md)。
+**当前进度**：v1.0 可部署版本已完成；v1.0.1 起前端采用 **左侧菜单 + 多标签** 壳层（见 [`docs/给Agent/前端布局约定.md`](docs/给Agent/前端布局约定.md)）。
 
 ## Agent / Cursor 开发提示
 

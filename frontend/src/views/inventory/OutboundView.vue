@@ -99,10 +99,7 @@ onMounted(load)
   <main class="page">
     <el-card v-loading="loading" shadow="never">
       <template #header>
-        <div class="header-row">
-          <span>手动出库</span>
-          <el-button @click="router.push('/')">返回首页</el-button>
-        </div>
+        <span>手动出库</span>
       </template>
 
       <div v-if="!prescriptionId" class="empty-guide">
@@ -114,10 +111,9 @@ onMounted(load)
               <li>保存病历后点击「开处方」，录入药品并保存</li>
               <li>在处方页点击「出库」，系统会列出待出库药品</li>
             </ol>
-            <p class="guide-note">出库必须关联患者和处方，不能从首页直接进入。</p>
+            <p class="guide-note">请从左侧菜单进入「患者」，完成处方后再出库；也可在处方页点击「出库」。</p>
             <div class="guide-actions">
               <el-button type="primary" @click="router.push('/patient')">去患者列表</el-button>
-              <el-button @click="router.push('/')">返回首页</el-button>
             </div>
           </template>
         </el-empty>

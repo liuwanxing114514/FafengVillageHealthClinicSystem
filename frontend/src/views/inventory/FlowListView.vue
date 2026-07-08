@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { listFlows } from '@/api/inventory'
 import type { FlowItem } from '@/types/inventory'
 
-const router = useRouter()
 const loading = ref(false)
 const records = ref<FlowItem[]>([])
 const total = ref(0)
@@ -35,10 +33,7 @@ onMounted(load)
   <main class="page">
     <el-card v-loading="loading" shadow="never">
       <template #header>
-        <div class="header-row">
-          <span>库存流水</span>
-          <el-button @click="router.push('/')">返回首页</el-button>
-        </div>
+        <span>库存流水</span>
       </template>
       <el-table :data="records">
         <el-table-column prop="createdAt" label="时间" width="170">

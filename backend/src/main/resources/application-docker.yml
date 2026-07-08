@@ -6,4 +6,4 @@ spring:
   datasource:
     url: jdbc:postgresql://postgres:5432/clinic
     username: clinic
-    password: change_me
+    password: ${CLINIC_DB_PASSWORD:change_me}

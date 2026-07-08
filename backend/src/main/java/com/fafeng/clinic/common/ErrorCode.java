@@ -7,6 +7,7 @@ public enum ErrorCode {
     FORBIDDEN(403, "无权访问"),
     NOT_FOUND(404, "资源不存在"),
     CONFLICT(409, "操作冲突"),
+    SERVICE_UNAVAILABLE(503, "服务暂不可用"),
     INTERNAL_ERROR(500, "服务器内部错误");
 
     private final int code;

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { getDashboardSummary } from '@/api/inventory'
 import type { DashboardSummary } from '@/types/inventory'
 
@@ -31,21 +30,9 @@ onMounted(async () => {
   <main class="page">
     <el-card v-loading="loading" shadow="hover">
       <template #header>
-        <div class="header-row">
-          <span class="title">发凤村卫生室诊所系统</span>
-          <div class="nav">
-            <el-button link type="primary" @click="router.push('/patient')">患者</el-button>
-            <el-button link type="primary" @click="router.push('/medicine')">药品</el-button>
-            <el-button link type="primary" @click="router.push('/inventory/inbound')">入库</el-button>
-            <el-button link type="primary" @click="router.push('/inventory/outbound')">出库</el-button>
-            <el-button link type="primary" @click="router.push('/inventory/alerts')">预警</el-button>
-            <el-button link type="primary" @click="router.push('/ai')">AI 助手</el-button>
-            <el-button link type="primary" @click="router.push('/settings')">设置</el-button>
-          </div>
-        </div>
+        <span class="title">工作台</span>
       </template>
 
-      <p class="version">v0.9 AI 接口预留</p>
       <p class="hint">后端：{{ backendStatus }}</p>
 
       <div v-if="summary" class="stats">
@@ -76,6 +63,7 @@ onMounted(async () => {
       </div>
 
       <div class="links">
+        <el-button @click="router.push('/inventory/alerts')">查看全部预警</el-button>
         <el-button @click="router.push('/inventory/flows')">库存流水</el-button>
       </div>
     </el-card>
@@ -83,34 +71,9 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  padding: 24px;
-}
-
-.header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
 .title {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
-}
-
-.version {
-  margin: 0 0 8px;
-  color: #409eff;
-  font-weight: 500;
 }
 
 .hint {
@@ -135,5 +98,7 @@ onMounted(async () => {
 
 .links {
   margin-top: 16px;
+  display: flex;
+  gap: 8px;
 }
 </style>

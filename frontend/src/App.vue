@@ -11,7 +11,7 @@ html,
 body,
 #app {
   margin: 0;
-  min-height: 100vh;
+  height: 100vh;
   font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   background: #f5f7fa;
 }

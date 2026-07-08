@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { createPatient, deletePatient, getPatient, listPatientVisits, updatePatient } from '@/api/patient'
 import { deleteVisit } from '@/api/visit'
+import { useTabTitle } from '@/composables/useTabTitle'
 import type { PatientDetail } from '@/types/patient'
 import type { VisitListItem } from '@/types/visit'
 
@@ -27,6 +28,11 @@ const form = reactive({
   address: '',
   remark: '',
 })
+
+useTabTitle(computed(() => {
+  if (isNew.value) return '新建患者'
+  return form.name ? `患者：${form.name}` : ''
+}))
 
 function formatDateTime(value: string) {
   return value ? value.replace('T', ' ').slice(0, 16) : '—'

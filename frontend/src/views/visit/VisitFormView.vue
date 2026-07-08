@@ -4,12 +4,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPatient } from '@/api/patient'
 import { createVisit, deleteVisit, getVisit, updateVisit } from '@/api/visit'
+import { getVoiceStatus } from '@/api/ai'
+import VoiceInputButton from '@/components/visit/VoiceInputButton.vue'
+import { useTabTitle } from '@/composables/useTabTitle'
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 const patientName = ref('')
+const voiceAvailable = ref(false)
 
 const isNew = computed(() => route.params.id === 'new')
 const visitId = computed(() => (isNew.value ? null : Number(route.params.id)))
@@ -38,6 +42,14 @@ const form = reactive({
   treatment: '',
   remark: '',
 })
+
+useTabTitle(computed(() => {
+  if (isNew.value) {
+    return patientName.value ? `新建病历 · ${patientName.value}` : '新建病历'
+  }
+  const label = patientName.value || (form.diagnosis ? form.diagnosis.slice(0, 12) : '')
+  return label ? `病历 · ${label}` : `病历 #${visitId.value}`
+}))
 
 function formatDateTimeLocal(value: string) {
   if (!value) return ''
@@ -155,7 +167,15 @@ async function onDelete() {
   }
 }
 
-onMounted(loadVisit)
+onMounted(async () => {
+  await loadVisit()
+  try {
+    const status = await getVoiceStatus()
+    voiceAvailable.value = status.available
+  } catch {
+    voiceAvailable.value = false
+  }
+})
 </script>
 
 <template>
@@ -185,13 +205,22 @@ onMounted(loadVisit)
           />
         </el-form-item>
         <el-form-item label="主诉">
-          <el-input v-model="form.chiefComplaint" type="textarea" :rows="2" />
+          <div class="field-with-voice">
+            <el-input v-model="form.chiefComplaint" type="textarea" :rows="2" />
+            <VoiceInputButton v-model="form.chiefComplaint" :available="voiceAvailable" />
+          </div>
         </el-form-item>
         <el-form-item label="现病史">
-          <el-input v-model="form.presentIllness" type="textarea" :rows="3" />
+          <div class="field-with-voice">
+            <el-input v-model="form.presentIllness" type="textarea" :rows="3" />
+            <VoiceInputButton v-model="form.presentIllness" :available="voiceAvailable" />
+          </div>
         </el-form-item>
         <el-form-item label="既往史">
-          <el-input v-model="form.pastHistory" type="textarea" :rows="2" />
+          <div class="field-with-voice">
+            <el-input v-model="form.pastHistory" type="textarea" :rows="2" />
+            <VoiceInputButton v-model="form.pastHistory" :available="voiceAvailable" />
+          </div>
         </el-form-item>
         <el-form-item label="体温(℃)">
           <el-input-number v-model="form.temperature" :min="30" :max="45" :precision="1" :step="0.1" />
@@ -212,16 +241,28 @@ onMounted(loadVisit)
           <el-input v-model="form.pulse" maxlength="64" />
         </el-form-item>
         <el-form-item label="过敏史">
-          <el-input v-model="form.allergyHistory" type="textarea" :rows="2" />
+          <div class="field-with-voice">
+            <el-input v-model="form.allergyHistory" type="textarea" :rows="2" />
+            <VoiceInputButton v-model="form.allergyHistory" :available="voiceAvailable" />
+          </div>
         </el-form-item>
         <el-form-item label="诊断">
-          <el-input v-model="form.diagnosis" type="textarea" :rows="2" />
+          <div class="field-with-voice">
+            <el-input v-model="form.diagnosis" type="textarea" :rows="2" />
+            <VoiceInputButton v-model="form.diagnosis" :available="voiceAvailable" />
+          </div>
         </el-form-item>
         <el-form-item label="处理意见">
-          <el-input v-model="form.treatment" type="textarea" :rows="3" />
+          <div class="field-with-voice">
+            <el-input v-model="form.treatment" type="textarea" :rows="3" />
+            <VoiceInputButton v-model="form.treatment" :available="voiceAvailable" />
+          </div>
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="2" />
+          <div class="field-with-voice">
+            <el-input v-model="form.remark" type="textarea" :rows="2" />
+            <VoiceInputButton v-model="form.remark" :available="voiceAvailable" />
+          </div>
         </el-form-item>
         <el-form-item v-if="!isNew">
           <el-button type="danger" plain @click="onDelete">删除病历</el-button>
@@ -260,5 +301,16 @@ onMounted(loadVisit)
 
 .form-grid {
   max-width: 760px;
+}
+
+.field-with-voice {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.field-with-voice :deep(.el-textarea) {
+  flex: 1;
 }
 </style>

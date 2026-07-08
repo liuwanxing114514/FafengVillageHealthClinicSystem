@@ -11,6 +11,7 @@ import {
   updatePrescription,
   voidPrescription,
 } from '@/api/prescription'
+import { useTabTitle } from '@/composables/useTabTitle'
 import type { MedicineListItem } from '@/types/medicine'
 import type { PrescriptionItem } from '@/types/prescription'
 
@@ -44,6 +45,13 @@ const form = reactive({
   diagnosis: '',
   items: [] as EditableItem[],
 })
+
+useTabTitle(computed(() => {
+  if (isNew.value) {
+    return patientName.value ? `新建处方 · ${patientName.value}` : '新建处方'
+  }
+  return patientName.value ? `处方 · ${patientName.value}` : `处方 #${prescriptionId.value}`
+}))
 
 function emptyItem(): EditableItem {
   return {
@@ -192,7 +200,8 @@ async function onSave() {
 
 function goPrint() {
   if (prescriptionId.value) {
-    router.push(`/prescription/${prescriptionId.value}/print`)
+    const url = router.resolve(`/prescription/${prescriptionId.value}/print`).href
+    window.open(url, '_blank')
   }
 }
 

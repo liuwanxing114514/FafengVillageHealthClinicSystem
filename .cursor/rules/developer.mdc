@@ -28,3 +28,9 @@ alwaysApply: false
 ## 交付要求
 
 完成后说明：改了哪些文件、如何验证、验收项对照、是否需更新 DEPLOYMENT / `.env.example`。
+
+## 前端壳层（v1.0.1 起）
+
+- 登录后页面必须在 **`MainLayout`** 内，见 [`docs/给Agent/前端布局约定.md`](../../docs/给Agent/前端布局约定.md)（从仓库根引用）。
+- **禁止**在新页面加「返回首页」或重复顶栏导航。
+- 详情页用 **`useTabTitle`** 更新标签标题；打印页用 **`standalone`** 或新窗口。

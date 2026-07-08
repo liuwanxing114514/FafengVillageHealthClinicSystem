@@ -113,6 +113,33 @@ class InventoryControllerTest {
 
     @Test
     @WithMockUser(username = "admin")
+    void expiringAndLowStockAlerts() throws Exception {
+        long medicineId = createMedicine();
+
+        mockMvc.perform(post("/api/inventory/inbound")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "medicineId": %d,
+                                  "quantity": 10,
+                                  "unit": "片",
+                                  "batchNo": "EXP-SOON",
+                                  "expiryDate": "%s",
+                                  "purchasePrice": 0.5,
+                                  "supplier": "测试"
+                                }
+                                """.formatted(medicineId, java.time.LocalDate.now().plusMonths(1))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/inventory/alerts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.expiring", hasSize(greaterThanOrEqualTo(1))))
+                .andExpect(jsonPath("$.data.lowStock", hasSize(greaterThanOrEqualTo(1))));
+    }
+
+    @Test
+    @WithMockUser(username = "admin")
     void outboundBlockedWhenInsufficient() throws Exception {
         long medicineId = createMedicine();
         long patientId = createPatient();

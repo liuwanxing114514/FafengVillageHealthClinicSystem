@@ -109,7 +109,6 @@ onMounted(loadList)
         <div class="header-row">
           <span class="title">患者管理</span>
           <div class="actions">
-            <el-button @click="router.push('/')">返回首页</el-button>
             <el-button type="primary" @click="goCreate">新增患者</el-button>
           </div>
         </div>
