@@ -71,10 +71,28 @@ npm run dev
 
 见 [`docs/共用/ROADMAP.md`](docs/共用/ROADMAP.md)。
 
-当前分支 **v0.1-skeleton**：仅项目骨架 + Flyway V0（启用 `vector`、`pg_trgm` 扩展）。
+**当前进度**：`develop` 已完成 v0.4（患者/病历）。v0.5–v1.0 见 [`docs/给Agent/进度清单-v0.5-v1.0.md`](docs/给Agent/进度清单-v0.5-v1.0.md)。
+
+## Agent / Cursor 开发提示
+
+本项目在 Cursor 中配置了 **MCP 工具**，开发时 Agent 应优先使用（若已启用）：
+
+| MCP | 用途 | 典型场景 |
+| --- | --- | --- |
+| **user-jetbrains** | IntelliJ IDEA 集成 | 运行 `ClinicApplication`、查看编译错误、`mvn test`、重构、符号搜索 |
+| **user-datagrip** | DataGrip 数据库 | 列出连接、`execute_sql_query` 验证 Flyway 迁移结果、预览表数据、检查索引 |
+
+**建议流程**：
+
+1. 改 Flyway 迁移后 → DataGrip 执行 SQL 或启动应用验证表结构
+2. 改 Java 后 → JetBrains `build_project` / `get_project_problems` 查编译问题
+3. 自测前 → DataGrip 查 `prescription`、`inventory_flow` 等表数据是否正确
+
+本地 dev 数据库默认见 `application-dev.yml`（PostgreSQL，库名 `clinic`）。
 
 ## 文档
 
 - 架构设计：[`docs/设计/v0.1-架构设计.md`](docs/设计/v0.1-架构设计.md)
 - 开发交接：[`docs/给Agent/开发交接.md`](docs/给Agent/开发交接.md)
+- **进度清单**：[`docs/给Agent/进度清单-v0.5-v1.0.md`](docs/给Agent/进度清单-v0.5-v1.0.md)
 - 部署指南：[`docs/共用/DEPLOYMENT.md`](docs/共用/DEPLOYMENT.md)
