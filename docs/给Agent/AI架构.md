@@ -139,6 +139,7 @@ CLINIC_OCR_URL=
 | T1 | 脱敏规则定稿：部分屏蔽（姓/手机首尾/门牌/身份证） |
 | T2–T6 | 出库 FEFO 推荐+手动确认；年龄推算；身份证；库存下限单位 |
 | v0.9 | 待填：AiProvider 接口、ai_draft 表 |
+| v1.1 | Whisper 语音转写：/api/ai/voice/transcribe、uploads/audio、whisper-service 容器 |
 | v1.3 | 待填：DeepSeek、Desensitizer、提示词模板 |
 | v2.0 | 待填：Agent 工具列表、execution_log |
 | v2.2 | 待填：向量化 pipeline |

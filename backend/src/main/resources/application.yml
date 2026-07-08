@@ -10,6 +10,10 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 server:
   port: 8080
@@ -26,6 +30,10 @@ clinic:
     provider: ${CLINIC_AI_PROVIDER:noop}
     deepseek-api-key: ${DEEPSEEK_API_KEY:}
     local-base-url: ${LOCAL_AI_BASE_URL:http://localhost:11434}
+  voice:
+    whisper-url: ${CLINIC_WHISPER_URL:}
+    upload-dir: ${CLINIC_VOICE_UPLOAD_DIR:uploads/audio}
+    save-audio: ${CLINIC_VOICE_SAVE_AUDIO:true}
 
 mybatis-plus:
   configuration:
