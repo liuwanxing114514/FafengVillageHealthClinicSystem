@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
+const auth = useAuthStore()
 const backendStatus = ref<string>('检查中…')
 
 onMounted(async () => {
@@ -9,7 +13,7 @@ onMounted(async () => {
     const { data } = await axios.get<{ status: string }>('/api/health')
     backendStatus.value = data.status === 'UP' ? '正常' : data.status
   } catch {
-    backendStatus.value = '未连接（开发模式请确认后端已启动）'
+    backendStatus.value = '未连接（请确认后端已启动）'
   }
 })
 </script>
@@ -18,11 +22,15 @@ onMounted(async () => {
   <main class="page">
     <el-card class="card" shadow="hover">
       <template #header>
-        <span class="title">发凤村卫生室诊所系统</span>
+        <div class="header-row">
+          <span class="title">发凤村卫生室诊所系统</span>
+          <el-button link type="primary" @click="router.push('/settings')">系统设置</el-button>
+        </div>
       </template>
-      <p class="version">v0.1 项目骨架</p>
+      <p class="version">v0.2 登录与基础模块</p>
+      <p class="hint">当前用户：{{ auth.operator ?? '—' }}</p>
       <p class="hint">后端健康检查：{{ backendStatus }}</p>
-      <p class="note">业务功能将在 v0.2 起逐步实装。</p>
+      <p class="note">药品、患者等业务功能将在后续版本逐步开放。</p>
     </el-card>
   </main>
 </template>
@@ -37,7 +45,13 @@ onMounted(async () => {
 }
 
 .card {
-  width: min(480px, 100%);
+  width: min(520px, 100%);
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .title {
