@@ -149,7 +149,17 @@ public class MedicineImportExcelParser {
         }
         Matcher matcher = CONVERSION_PATTERN.matcher(text);
         if (matcher.matches()) {
-            row.setConversionFactor(Integer.parseInt(matcher.group(3)));
+            int fromQuantity = Integer.parseInt(matcher.group(1));
+            int toQuantity = Integer.parseInt(matcher.group(3));
+            if (fromQuantity <= 0 || toQuantity <= 0) {
+                row.addError("换算关系数量必须大于 0");
+                return;
+            }
+            if (toQuantity % fromQuantity != 0) {
+                row.addError("换算关系无法整除，示例：1盒=24粒 或 2盒=48粒");
+                return;
+            }
+            row.setConversionFactor(toQuantity / fromQuantity);
             return;
         }
         if (text.matches("\\d+")) {

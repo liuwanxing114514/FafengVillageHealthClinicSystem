@@ -91,9 +91,9 @@ public class MedicineImportService {
 
     @Transactional
     public MedicineImportConfirmResultVO confirm(MedicineImportConfirmRequest request) {
-        List<MedicineImportParsedRow> rows = previewCache.get(request.previewId());
+        List<MedicineImportParsedRow> rows = previewCache.take(request.previewId());
         if (rows == null) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "预览已过期，请重新上传");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "预览已过期或已确认，请重新上传");
         }
 
         validateRows(rows);
@@ -138,7 +138,6 @@ public class MedicineImportService {
             }
         }
 
-        previewCache.remove(request.previewId());
         return new MedicineImportConfirmResultVO(medicineCount, inventoryCount);
     }
 

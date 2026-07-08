@@ -47,6 +47,20 @@ class MedicineImportExcelParserTest {
         assertThrows(BusinessException.class, () -> parser.parse(new ByteArrayInputStream(workbook)));
     }
 
+    @Test
+    void parseConversionWithLeftQuantity() throws Exception {
+        byte[] workbook = buildWorkbook(new String[][]{
+                MedicineImportExcelParser.TEMPLATE_HEADERS.toArray(String[]::new),
+                {
+                        "换算测试药", "", "", "", "粒", "盒", "2盒=48粒",
+                        "", "", "1", "", "", "", "0", ""
+                }
+        });
+
+        List<MedicineImportParsedRow> rows = parser.parse(new ByteArrayInputStream(workbook));
+        assertEquals(Integer.valueOf(24), rows.get(0).getConversionFactor());
+    }
+
     private byte[] buildWorkbook(String[][] data) throws Exception {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("sheet1");
