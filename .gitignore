@@ -1,0 +1,54 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Env & secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Java / Spring Boot
+backend/target/
+backend/.gradle/
+backend/build/
+*.class
+*.jar
+*.war
+hs_err_pid*
+
+# Node / Vue
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test & coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Docker / local data (do not commit clinic production data)
+clinic-data/
+ai-models/
+
+# Uploads & backups (runtime)
+uploads/
+**/backup/*.zip
+**/backup/*.sql
+**/db-dump/
+
+# Temp
+*.tmp
+*.temp
+~$*
