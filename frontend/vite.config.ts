@@ -1,12 +1,16 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { fileURLToPath, URL } from 'node:url'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const frontendRoot = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
+  root: frontendRoot,
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@': path.resolve(frontendRoot, 'src'),
     },
   },
   server: {
