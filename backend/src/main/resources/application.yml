@@ -22,8 +22,10 @@ management:
 
 clinic:
   ai:
-    enabled: false
-    provider: noop
+    enabled: ${CLINIC_AI_ENABLED:false}
+    provider: ${CLINIC_AI_PROVIDER:noop}
+    deepseek-api-key: ${DEEPSEEK_API_KEY:}
+    local-base-url: ${LOCAL_AI_BASE_URL:http://localhost:11434}
 
 mybatis-plus:
   configuration:

@@ -39,12 +39,13 @@ onMounted(async () => {
             <el-button link type="primary" @click="router.push('/inventory/inbound')">入库</el-button>
             <el-button link type="primary" @click="router.push('/inventory/outbound')">出库</el-button>
             <el-button link type="primary" @click="router.push('/inventory/alerts')">预警</el-button>
+            <el-button link type="primary" @click="router.push('/ai')">AI 助手</el-button>
             <el-button link type="primary" @click="router.push('/settings')">设置</el-button>
           </div>
         </div>
       </template>
 
-      <p class="version">v0.8 Excel 模板导入</p>
+      <p class="version">v0.9 AI 接口预留</p>
       <p class="hint">后端：{{ backendStatus }}</p>
 
       <div v-if="summary" class="stats">
