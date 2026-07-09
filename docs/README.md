@@ -19,7 +19,8 @@ docs/
     ├── README.md
     ├── ROADMAP.md            ★ 版本号唯一权威
     ├── 大纲.md               业务与技术总纲
-    └── DEPLOYMENT.md         部署、备份、升级命令
+    ├── DEPLOYMENT.md         NAS 部署、备份、升级
+    └── 测试清单.md           本地测试 + 回归验收（无 NAS 看第一节）
 ```
 
 ---
@@ -44,6 +45,7 @@ docs/
 | 查版本范围 | [`共用/ROADMAP.md`](共用/ROADMAP.md) |
 | 第一期开发 | [`给Agent/README.md`](给Agent/README.md) |
 | 诊所电脑部署/升级 | [`共用/DEPLOYMENT.md`](共用/DEPLOYMENT.md) + [`给人看/后续版本操作说明.md`](给人看/后续版本操作说明.md) |
+| **本地测试 / 发版回归** | [`共用/测试清单.md`](共用/测试清单.md) |
 | 开 AI 功能前 | [`给Agent/AI架构.md`](给Agent/AI架构.md) 脱敏规则 |
 
 ---
@@ -75,8 +77,9 @@ docs/
 
 ## 文档维护规则
 
-| 改了什么 | 同步更新 |
+| 文档 | 更新内容 |
 | --- | --- |
+| 测试/回归 | `共用/测试清单.md` |
 | 版本范围 / 交付物 | `共用/ROADMAP.md` |
 | 业务规则 | `共用/大纲.md`、`给Agent/开发交接.md` |
 | 脱敏 / AI 设计 | `给Agent/AI架构.md` |

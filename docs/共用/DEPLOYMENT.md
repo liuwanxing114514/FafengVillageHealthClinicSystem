@@ -220,11 +220,14 @@ CLINIC_OCR_URL=http://ocr-service:8000
 DEEPSEEK_API_KEY=
 CLINIC_AI_ENABLED=false
 CLINIC_AI_PROVIDER=noop
+DEEPSEEK_BASE_URL=https://api.siliconflow.cn
+DEEPSEEK_MODEL=deepseek-ai/DeepSeek-V3
 CLINIC_EMBEDDING_ENABLED=false
 CLINIC_EMBEDDING_API_KEY=
-CLINIC_EMBEDDING_BASE_URL=https://api.siliconflow.cn/v1
+CLINIC_EMBEDDING_BASE_URL=https://api.siliconflow.cn
 CLINIC_EMBEDDING_MODEL=BAAI/bge-m3
 CLINIC_EMBEDDING_DIMENSIONS=1024
+# Spring AI 会自动追加 /v1/...，base-url 勿带 /v1
 # Whisper 生产留空即可
 CLINIC_WHISPER_URL=
 ```
@@ -331,27 +334,15 @@ CLINIC_WHISPER_URL=
 
 ## 十、Smoke 验收步骤
 
-### A. 开发机（发布前）
+详细分档（本地 🤖/💻/🐳 vs NAS 🗄️ vs 手机 📱）见 **[`测试清单.md`](测试清单.md)**。
 
-1. `git checkout v3.0-release`
-2. IDEA profile=`dev`；IDEA MCP 在 `backend` 目录执行 `mvn test` 全绿
-3. `cd frontend && npm run build` 通过
+**发布前最低要求（开发机）**
 
-### B. NAS 首次部署 Smoke
+1. IDEA MCP：`backend` 目录 `mvn test` 全绿
+2. `cd frontend && npm run build` 通过
+3. IDEA dev + 浏览器：v1.0 基线 7 项（见测试清单 L-B1–B10）
 
-1. `docker compose up -d --build`（无 whisper）
-2. `/setup` → 登录
-3. 药品 → 入库 → 出库 → 病历 → 处方打印
-4. `./scripts/backup.sh` 成功
-5. 手机 HTTPS + 输入法语音录一条病历
-
-### C. NAS 版本更新 Smoke
-
-1. 更新前 `backup.sh` 有 tar.gz
-2. 更新程序 + 合并 `.env` + `docker compose up -d --build`
-3. Flyway SUCCESS；v1.0 基线仍过
-4. v2.6：流水 Excel、病历 PDF
-5. 抽查库存/病历条数未异常减少
+**有 NAS 时**：再按 DEPLOYMENT 第二节（首次）或第四节（更新）+ 测试清单第二节 v3.0 汇总。
 
 ---
 

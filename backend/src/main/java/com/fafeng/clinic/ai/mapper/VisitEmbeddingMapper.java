@@ -100,7 +100,7 @@ public interface VisitEmbeddingMapper extends BaseMapper<VisitEmbedding> {
             FROM visit_embedding ve
             INNER JOIN clinic_visit cv ON cv.id = ve.visit_id
             WHERE cv.status = 'ACTIVE'
-              AND (#{excludeVisitId} IS NULL OR ve.visit_id <> #{excludeVisitId})
+              AND (CAST(#{excludeVisitId} AS bigint) IS NULL OR ve.visit_id <> CAST(#{excludeVisitId} AS bigint))
             ORDER BY ve.embedding <=> #{queryVector}::vector
             LIMIT #{limit}
             """)

@@ -83,7 +83,19 @@ docker compose up -d --build
 # 开启 CLINIC_EMBEDDING_* 后：设置 → 全量同步 → 新建病历测相似 Top-3
 ```
 
-**版本更新时不要执行 seed**。
+**版本更新时不要执行 seed**。完整测试项见 [`docs/共用/测试清单.md`](docs/共用/测试清单.md)。
+
+---
+
+## 本地测试（无 NAS）
+
+无内网 NAS 时，在开发机至少完成：
+
+1. IDEA MCP → `mvn test`
+2. `cd frontend && npm run build`
+3. IDEA dev + `npm run dev` → 浏览器走 v1.0 基线（见测试清单 L-B 系列）
+
+可选：本机 Docker Compose + `seed-demo.ps1` 验证容器与备份脚本。
 
 ---
 
