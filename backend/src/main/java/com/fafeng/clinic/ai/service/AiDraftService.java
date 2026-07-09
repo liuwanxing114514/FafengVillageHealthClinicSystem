@@ -3,6 +3,9 @@ package com.fafeng.clinic.ai.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fafeng.clinic.ai.config.ClinicAiProperties;
+import com.fafeng.clinic.agent.model.OutboundDraftPayload;
+import com.fafeng.clinic.ai.dto.ApproveOutboundDraftRequest;
+import com.fafeng.clinic.ai.dto.ApproveOutboundLineRequest;
 import com.fafeng.clinic.ai.dto.ApproveVisitDraftRequest;
 import com.fafeng.clinic.ai.dto.CreateAiDraftRequest;
 import com.fafeng.clinic.ai.dto.UpdateAiDraftPayloadRequest;
@@ -16,19 +19,26 @@ import com.fafeng.clinic.ai.provider.AiProvider;
 import com.fafeng.clinic.ai.vo.AiDraftVO;
 import com.fafeng.clinic.ai.vo.AiStatusVO;
 import com.fafeng.clinic.ai.vo.ApproveInboundResultVO;
+import com.fafeng.clinic.ai.vo.ApproveOutboundResultVO;
 import com.fafeng.clinic.clinic.dto.SaveVisitRequest;
 import com.fafeng.clinic.clinic.service.VisitService;
 import com.fafeng.clinic.clinic.vo.VisitDetailVO;
 import com.fafeng.clinic.common.BusinessException;
 import com.fafeng.clinic.common.ErrorCode;
+import com.fafeng.clinic.inventory.dto.OutboundConfirmRequest;
+import com.fafeng.clinic.inventory.dto.OutboundLineRequest;
+import com.fafeng.clinic.inventory.dto.OutboundPreviewRequest;
 import com.fafeng.clinic.inventory.dto.InboundRequest;
 import com.fafeng.clinic.inventory.service.InventoryService;
+import com.fafeng.clinic.inventory.vo.FlowVO;
+import com.fafeng.clinic.inventory.vo.OutboundPreviewVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -192,6 +202,59 @@ public class AiDraftService {
         return visit;
     }
 
+    @Transactional
+    public ApproveOutboundResultVO approveOutbound(Long id, ApproveOutboundDraftRequest request) {
+        AiDraft draft = requirePendingDraft(id);
+        if (!AiDraft.TYPE_OUTBOUND.equals(draft.getDraftType())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "草稿类型不是出库");
+        }
+
+        OutboundDraftPayload payload = readOutboundPayload(draft.getPayload());
+        if (payload.getPrescriptionId() == null || payload.getPatientId() == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST,
+                    "此出库草稿未关联处方，请使用库存出库页手动操作");
+        }
+        if (payload.getItems() == null || payload.getItems().isEmpty()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "出库明细为空");
+        }
+        if (request.lines().size() != payload.getItems().size()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "出库明细行数与草稿不一致");
+        }
+
+        Set<Long> medicineIds = new HashSet<>();
+        List<OutboundLineRequest> previewItems = request.lines().stream()
+                .map(line -> {
+                    if (!medicineIds.add(line.medicineId())) {
+                        throw new BusinessException(ErrorCode.BAD_REQUEST, "同一药品请勿重复添加，请合并数量");
+                    }
+                    return new OutboundLineRequest(line.medicineId(), line.quantity(), line.unit());
+                })
+                .toList();
+
+        OutboundPreviewVO preview = inventoryService.previewOutbound(new OutboundPreviewRequest(
+                payload.getPatientId(), payload.getPrescriptionId(), previewItems));
+        if (!preview.sufficient()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "部分药品库存不足，整单无法出库");
+        }
+
+        int flowCount = 0;
+        for (ApproveOutboundLineRequest line : request.lines()) {
+            inventoryService.validateOutboundAllocationTotals(
+                    line.medicineId(), line.quantity(), line.unit(), line.allocations());
+            List<FlowVO> flows = inventoryService.confirmOutbound(new OutboundConfirmRequest(
+                    payload.getPatientId(),
+                    payload.getPrescriptionId(),
+                    line.medicineId(),
+                    line.allocations()));
+            flowCount += flows.size();
+        }
+
+        draft.setStatus(AiDraft.STATUS_APPROVED);
+        draft.setUpdatedAt(OffsetDateTime.now());
+        draftMapper.updateById(draft);
+        return new ApproveOutboundResultVO(payload.getPrescriptionId(), request.lines().size(), flowCount);
+    }
+
     private InboundRequest toInboundRequest(InboundDraftLine line, String supplier, String remark) {
         if (line.getMedicineId() == null) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "请选择药品");
@@ -250,6 +313,20 @@ public class AiDraftService {
             return objectMapper.readValue(payloadJson, VisitDraftPayload.class);
         } catch (Exception ex) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "病历草稿格式无效");
+        }
+    }
+
+    private OutboundDraftPayload readOutboundPayload(String payloadJson) {
+        try {
+            OutboundDraftPayload payload = objectMapper.readValue(payloadJson, OutboundDraftPayload.class);
+            if (payload.getItems() == null || payload.getItems().isEmpty()) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "出库明细为空");
+            }
+            return payload;
+        } catch (BusinessException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "出库草稿格式无效");
         }
     }
 

@@ -216,11 +216,7 @@ async function onOutboundDraft() {
   if (!prescriptionId.value) return
   try {
     const draft = await generateOutboundDraft(prescriptionId.value)
-    await ElMessageBox.alert(
-      draft.items.map((i) => `${i.medicineName} ${i.quantity}${i.unit}`).join('\n') || '无药品',
-      '待出库清单（v0.6 将支持确认出库）',
-      { confirmButtonText: '知道了' },
-    )
+    router.push({ name: 'outbound-draft', params: { id: draft.id } })
   } catch {
     // cancelled
   }

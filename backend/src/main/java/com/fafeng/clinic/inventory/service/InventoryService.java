@@ -200,6 +200,23 @@ public class InventoryService {
         return new BatchOutboundResultVO(request.lines().size(), allFlows.size(), allFlows);
     }
 
+    public void validateOutboundAllocationTotals(Long medicineId,
+                                                  BigDecimal quantity,
+                                                  String unit,
+                                                  List<OutboundAllocationRequest> allocations) {
+        Medicine medicine = requireMedicine(medicineId);
+        List<MedicineUnitConversion> conversions = listConversions(medicine.getId());
+        BigDecimal baseNeeded = InventoryUnitConverter.toBaseQuantity(
+                medicine, conversions, quantity, unit);
+        BigDecimal allocated = allocations.stream()
+                .map(OutboundAllocationRequest::quantity)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (allocated.compareTo(baseNeeded) != 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST,
+                    "「" + medicine.getName() + "」批次分配数量与出库数量不一致");
+        }
+    }
+
     @Transactional
     public List<FlowVO> confirmOutbound(OutboundConfirmRequest request) {
         validatePrescriptionContext(request.patientId(), request.prescriptionId());

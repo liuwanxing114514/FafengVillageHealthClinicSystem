@@ -63,3 +63,34 @@ export interface ApproveInboundResult {
   successCount: number
   totalCount: number
 }
+
+export interface OutboundDraftLine {
+  medicineId?: number
+  medicineName?: string
+  specification?: string
+  quantity?: string
+  unit?: string
+  usage?: string
+}
+
+export interface OutboundDraftPayload {
+  prescriptionId?: number
+  patientId?: number
+  patientName?: string
+  diagnosis?: string
+  remark?: string
+  items?: OutboundDraftLine[]
+}
+
+export interface ApproveOutboundLine {
+  medicineId: number
+  quantity: number
+  unit: string
+  allocations: { batchId: number; quantity: number }[]
+}
+
+export interface ApproveOutboundResult {
+  prescriptionId: number
+  lineCount: number
+  flowCount: number
+}

@@ -1,5 +1,6 @@
 package com.fafeng.clinic.ai.controller;
 
+import com.fafeng.clinic.ai.dto.ApproveOutboundDraftRequest;
 import com.fafeng.clinic.ai.dto.ApproveVisitDraftRequest;
 import com.fafeng.clinic.ai.dto.CreateAiDraftRequest;
 import com.fafeng.clinic.ai.dto.StructureVisitRequest;
@@ -11,6 +12,7 @@ import com.fafeng.clinic.ai.service.AiVisitStructureService;
 import com.fafeng.clinic.ai.vo.AiDraftVO;
 import com.fafeng.clinic.ai.vo.AiStatusVO;
 import com.fafeng.clinic.ai.vo.ApproveInboundResultVO;
+import com.fafeng.clinic.ai.vo.ApproveOutboundResultVO;
 import com.fafeng.clinic.ai.vo.OcrStatusVO;
 import com.fafeng.clinic.clinic.vo.VisitDetailVO;
 import com.fafeng.clinic.common.Result;
@@ -105,5 +107,12 @@ public class AiController {
             @PathVariable Long id,
             @Valid @RequestBody ApproveVisitDraftRequest request) {
         return Result.ok(aiDraftService.approveVisit(id, request));
+    }
+
+    @PostMapping("/drafts/{id}/approve-outbound")
+    public Result<ApproveOutboundResultVO> approveOutbound(
+            @PathVariable Long id,
+            @Valid @RequestBody ApproveOutboundDraftRequest request) {
+        return Result.ok(aiDraftService.approveOutbound(id, request));
     }
 }

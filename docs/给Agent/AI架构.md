@@ -141,11 +141,14 @@ Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → Spring AI `Chat
 
 - `POST /api/agent/chat` — 自然语言查询
 - `GET /api/agent/logs` — 执行日志（`agent_execution_log` 表）
+- `POST /api/prescriptions/{id}/outbound-draft` — 处方生成 OUTBOUND 草稿（v2.1）
+- `POST /api/ai/drafts/{id}/approve-outbound` — 医生确认批次后批量出库（v2.1）
 
 ### 6.4 前端
 
 - `AiAssistantView`：对话、工具调用时间线、待确认出库卡片
-- `OutboundDraftView`：查看 OUTBOUND 草稿（批准出库在 v2.1）
+- `OutboundDraftView`：核对 OUTBOUND 草稿、FEFO 批次、确认出库后跳转处方打印（v2.1）
+- `PrescriptionFormView`：保存处方后「生成待出库清单」→ 跳转出库草稿页（v2.1）
 
 ---
 
@@ -176,4 +179,5 @@ CLINIC_OCR_URL=
 | v1.4 | PaddleOCR 容器、OCR 入库 INBOUND 草稿、批准入库 |
 | v2.0 | Agent 6 工具、AgentOrchestrator、agent_execution_log、AI 助手页 |
 | v2.0.2 | Spring AI：ChatClient 替换 HttpDeepSeekClient；@Tool 替换 JSON 编排；DesensitizationAdvisor |
+| v2.1 | 处方→出库→打印：`approveOutbound`、处方页生成 OUTBOUND 草稿、`OutboundDraftView` 确认出库 |
 | v2.2 | 待填：向量化 pipeline |

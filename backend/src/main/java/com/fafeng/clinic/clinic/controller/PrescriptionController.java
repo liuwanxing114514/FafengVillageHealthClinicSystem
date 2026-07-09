@@ -2,7 +2,7 @@ package com.fafeng.clinic.clinic.controller;
 
 import com.fafeng.clinic.clinic.dto.SavePrescriptionRequest;
 import com.fafeng.clinic.clinic.service.PrescriptionService;
-import com.fafeng.clinic.clinic.vo.OutboundDraftVO;
+import com.fafeng.clinic.ai.vo.AiDraftVO;
 import com.fafeng.clinic.clinic.vo.PrescriptionDetailVO;
 import com.fafeng.clinic.clinic.vo.PrescriptionPrintVO;
 import com.fafeng.clinic.common.Result;
@@ -69,8 +69,8 @@ public class PrescriptionController {
 
     @Operation(summary = "生成待出库草稿", description = "写入 ai_draft，不扣库存")
     @PostMapping("/{id}/outbound-draft")
-    public Result<OutboundDraftVO> outboundDraft(@PathVariable Long id) {
-        return Result.ok(prescriptionService.generateOutboundDraft(id));
+    public Result<AiDraftVO> outboundDraft(@PathVariable Long id) {
+        return Result.ok(prescriptionService.createOutboundAiDraft(id));
     }
 
     @Operation(summary = "按病历列出处方")

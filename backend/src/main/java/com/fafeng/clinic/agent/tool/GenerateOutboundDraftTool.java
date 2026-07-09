@@ -4,12 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fafeng.clinic.agent.model.OutboundDraftPayload;
+import com.fafeng.clinic.agent.model.OutboundDraftPayloadMapper;
 import com.fafeng.clinic.ai.entity.AiDraft;
 import com.fafeng.clinic.ai.service.AiDraftService;
 import com.fafeng.clinic.ai.vo.AiDraftVO;
 import com.fafeng.clinic.clinic.service.PrescriptionService;
-import com.fafeng.clinic.clinic.vo.OutboundDraftItemVO;
-import com.fafeng.clinic.clinic.vo.OutboundDraftVO;
 import com.fafeng.clinic.common.BusinessException;
 import com.fafeng.clinic.medicine.service.MedicineService;
 import com.fafeng.clinic.medicine.vo.MedicineDetailVO;
@@ -51,15 +50,16 @@ public class GenerateOutboundDraftTool implements AgentTool {
     public AgentToolResult execute(JsonNode args) {
         Long prescriptionId = SearchMedicineTool.longArg(args, "prescriptionId");
         try {
+            AiDraftVO draft;
             OutboundDraftPayload payload;
             if (prescriptionId != null) {
-                payload = fromPrescription(prescriptionId);
+                draft = prescriptionService.createOutboundAiDraft(prescriptionId);
+                payload = objectMapper.readValue(draft.payload(), OutboundDraftPayload.class);
             } else {
                 payload = fromMedicineRequest(args);
+                String payloadJson = objectMapper.writeValueAsString(payload);
+                draft = aiDraftService.createStructuredDraft(AiDraft.TYPE_OUTBOUND, payloadJson);
             }
-
-            String payloadJson = objectMapper.writeValueAsString(payload);
-            AiDraftVO draft = aiDraftService.createStructuredDraft(AiDraft.TYPE_OUTBOUND, payloadJson);
 
             ObjectNode data = objectMapper.createObjectNode();
             data.put("draftId", draft.id());
@@ -74,21 +74,6 @@ public class GenerateOutboundDraftTool implements AgentTool {
         } catch (Exception ex) {
             return AgentToolResult.fail("出库草稿生成失败");
         }
-    }
-
-    private OutboundDraftPayload fromPrescription(Long prescriptionId) {
-        OutboundDraftVO draft = prescriptionService.generateOutboundDraft(prescriptionId);
-        OutboundDraftPayload payload = new OutboundDraftPayload();
-        payload.setPrescriptionId(draft.prescriptionId());
-        payload.setPatientId(draft.patientId());
-        payload.setPatientName(draft.patientName());
-        payload.setDiagnosis(draft.diagnosis());
-        payload.setRemark("由处方 #" + prescriptionId + " 生成");
-        for (OutboundDraftItemVO item : draft.items()) {
-            payload.getItems().add(toItem(item.medicineId(), item.medicineName(), item.specification(),
-                    item.quantity(), item.unit(), item.usage()));
-        }
-        return payload;
     }
 
     private OutboundDraftPayload fromMedicineRequest(JsonNode args) {
@@ -118,20 +103,8 @@ public class GenerateOutboundDraftTool implements AgentTool {
 
         OutboundDraftPayload payload = new OutboundDraftPayload();
         payload.setRemark("Agent 请求出库：" + medicine.name());
-        payload.getItems().add(toItem(medicine.id(), medicine.name(), medicine.specification(),
-                quantity, unit, null));
+        payload.getItems().add(OutboundDraftPayloadMapper.toItem(
+                medicine.id(), medicine.name(), medicine.specification(), quantity, unit, null));
         return payload;
-    }
-
-    private OutboundDraftPayload.OutboundDraftItem toItem(Long medicineId, String name, String spec,
-                                                            BigDecimal quantity, String unit, String usage) {
-        OutboundDraftPayload.OutboundDraftItem item = new OutboundDraftPayload.OutboundDraftItem();
-        item.setMedicineId(medicineId);
-        item.setMedicineName(name);
-        item.setSpecification(spec);
-        item.setQuantity(quantity.toPlainString());
-        item.setUnit(unit);
-        item.setUsage(usage);
-        return item;
     }
 }

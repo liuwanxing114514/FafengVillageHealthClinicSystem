@@ -10,6 +10,12 @@ import com.fafeng.clinic.clinic.entity.PrescriptionItem;
 import com.fafeng.clinic.clinic.mapper.ClinicVisitMapper;
 import com.fafeng.clinic.clinic.mapper.PrescriptionItemMapper;
 import com.fafeng.clinic.clinic.mapper.PrescriptionMapper;
+import com.fafeng.clinic.agent.model.OutboundDraftPayload;
+import com.fafeng.clinic.agent.model.OutboundDraftPayloadMapper;
+import com.fafeng.clinic.ai.dto.CreateAiDraftRequest;
+import com.fafeng.clinic.ai.entity.AiDraft;
+import com.fafeng.clinic.ai.service.AiDraftService;
+import com.fafeng.clinic.ai.vo.AiDraftVO;
 import com.fafeng.clinic.clinic.vo.OutboundDraftItemVO;
 import com.fafeng.clinic.clinic.vo.OutboundDraftVO;
 import com.fafeng.clinic.clinic.vo.PrescriptionDetailVO;
@@ -24,6 +30,7 @@ import com.fafeng.clinic.patient.entity.Patient;
 import com.fafeng.clinic.patient.service.PatientService;
 import com.fafeng.clinic.ai.service.QuickPhraseService;
 import com.fafeng.clinic.system.service.AuditLogService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +59,8 @@ public class PrescriptionService {
     private final AuditLogService auditLogService;
     private final QuickPhraseService quickPhraseService;
     private final PrescriptionPrintTemplateService printTemplateService;
+    private final AiDraftService aiDraftService;
+    private final ObjectMapper objectMapper;
 
 
     @Transactional
@@ -168,6 +177,25 @@ public class PrescriptionService {
                 patient.getName(),
                 prescription.getDiagnosis(),
                 items);
+    }
+
+    @Transactional
+    public AiDraftVO createOutboundAiDraft(Long id) {
+        OutboundDraftVO draft = generateOutboundDraft(id);
+        if (draft.items().isEmpty()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "处方无药品，无法生成出库清单");
+        }
+        OutboundDraftPayload payload = OutboundDraftPayloadMapper.fromPrescriptionDraft(
+                draft, "由处方 #" + id + " 生成");
+        try {
+            String payloadJson = objectMapper.writeValueAsString(payload);
+            return aiDraftService.create(new CreateAiDraftRequest(
+                    AiDraft.TYPE_OUTBOUND, payloadJson, "prescription"));
+        } catch (BusinessException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "出库草稿生成失败");
+        }
     }
 
     public List<PrescriptionDetailVO> listByVisit(Long visitId) {

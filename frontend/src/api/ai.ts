@@ -4,8 +4,11 @@ import type {
   AiDraft,
   AiStatus,
   ApproveInboundResult,
+  ApproveOutboundLine,
+  ApproveOutboundResult,
   InboundDraftPayload,
   OcrStatus,
+  OutboundDraftPayload,
   VisitDraftPayload,
   VoiceStatus,
   VoiceTranscription,
@@ -86,12 +89,23 @@ export async function approveVisitDraft(id: number, patientId: number): Promise<
   return postData<{ id: number }>(`/ai/drafts/${id}/approve-visit`, { patientId })
 }
 
+export async function approveOutboundDraft(
+  id: number,
+  lines: ApproveOutboundLine[],
+): Promise<ApproveOutboundResult> {
+  return postData<ApproveOutboundResult>(`/ai/drafts/${id}/approve-outbound`, { lines })
+}
+
 export function parseInboundPayload(payload: string): InboundDraftPayload {
   return JSON.parse(payload) as InboundDraftPayload
 }
 
 export function parseVisitPayload(payload: string): VisitDraftPayload {
   return JSON.parse(payload) as VisitDraftPayload
+}
+
+export function parseOutboundPayload(payload: string): OutboundDraftPayload {
+  return JSON.parse(payload) as OutboundDraftPayload
 }
 
 export function stringifyInboundPayload(payload: InboundDraftPayload): string {
