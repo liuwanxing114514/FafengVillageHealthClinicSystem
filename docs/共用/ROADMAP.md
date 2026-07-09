@@ -37,7 +37,7 @@
 | 第六期：RAG 知识库 | v2.2 | 脱敏病历向量化 | 5.14 |
 | | v2.3 | 相似病例检索 | 5.15 |
 | 第七期：AI 运维与扩展 | v2.4 | RAG 运维与 Embedding 管理 | 5.19 |
-| | v2.5 | 本地 LLM 接入 | 3.4、5.18 |
+| | ~~v2.5~~ | ~~本地 LLM 接入~~（**已取消**，见下文） | 3.4、5.18 |
 | | v2.6 | 导出与病历 PDF | 5.20 |
 | | **v3.0** | **AI 全功能可部署基线** | 七、八 |
 
@@ -677,27 +677,15 @@
 
 ---
 
-### v2.5 本地 LLM 接入
+### v2.5 本地 LLM 接入（已取消，2026-07-09）
 
-**分支**：`v2.5-local-llm`
+**分支**：`v2.5-local-llm`（**已废弃，勿开发**）
 
-**交付**：
+**取消原因**：诊所与开发环境统一使用 **硅基流动等 OpenAI 兼容 API**（Chat + Embedding），稳定且与生产路径一致；断网场景非当前需求。
 
-- 实装 `LocalAiProvider`：通过 OpenAI 兼容接口接 **Ollama / LM Studio**（Chat）。
-- `clinic.ai.provider=local` 时：结构化整理、Agent 对话走本地 `ChatClient`（与 v2.0.2 条件 Bean 一致）。
-- Embedding：`CLINIC_EMBEDDING_PROVIDER=local` 端到端验证（bge 或本地 embed 模型）。
-- `.env.example` / `application.yml` / `DEPLOYMENT.md`：本地模型部署与切换说明。
-- 单元测试：mock 或 Testcontainers 可选；至少 provider 切换与 noop 降级测试。
+**保留**：`LocalAiProvider` 占位类与 `.env` 中 `LOCAL_AI_*` 注释；`provider=local` 仍返回「暂未实装」，不影响 `deepseek` / 硅基流动。
 
-**不做**：
-
-- 不捆绑特定模型权重；不实现模型训练/微调。
-- Whisper / OCR 容器改造（仍独立 HTTP 服务）。
-
-**验收**：
-
-- 断外网 + 本地 Ollama 可用时，Agent 查询与 AI 整理可用。
-- `provider=noop` 或本地不可达时，基础业务无报错。
+~~原交付~~（归档）：Ollama/LM Studio、`CLINIC_EMBEDDING_PROVIDER=local` 端到端等——**不再实施**。
 
 ---
 
@@ -728,14 +716,14 @@
 
 **分支**：`v3.0-ai-release`
 
-**前置依赖**：v2.3 + 建议 v2.4–v2.6 已合并 `develop`
+**前置依赖**：v2.3 + 建议 v2.4、v2.6 已合并 `develop`（v2.5 已取消）
 
 **目标**：诊所可**长期稳定运行**含 AI/RAG/Agent 的完整系统（对标 v1.0，但覆盖第二期–第七期全部能力）。
 
 **交付**：
 
 - `docker-compose.yml` + profile 文档：postgres、backend、frontend、whisper、ocr 一键说明。
-- `DEPLOYMENT.md`：**完整验收清单**（v1.0 基线 + v1.1–v2.3 + v2.4–v2.6 增量项）。
+- `DEPLOYMENT.md`：**完整验收清单**（v1.0 基线 + v1.1–v2.4 + v2.6 增量项；不含已取消 v2.5）。
 - `README.md`：功能一览与最低配置（可完全关闭 AI 运行）。
 - 演示数据脚本：可选刷新，含若干脱敏样例病历供 RAG 自测。
 - 关键 smoke：文档化手工验收步骤（或补充少量集成测试）；`mvn test` + `npm run build` 全绿。
