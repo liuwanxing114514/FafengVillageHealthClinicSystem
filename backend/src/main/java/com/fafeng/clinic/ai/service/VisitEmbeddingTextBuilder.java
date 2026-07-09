@@ -20,7 +20,25 @@ public class VisitEmbeddingTextBuilder {
             return "";
         }
         String raw = joinSections(visit);
-        if (raw.isBlank()) {
+        return desensitize(raw, patient);
+    }
+
+    /**
+     * 相似检索查询文本：仅主诉、现病史、诊断（v2.3）。
+     */
+    public String buildDesensitizedSearchQuery(String chiefComplaint,
+                                               String presentIllness,
+                                               String diagnosis,
+                                               Patient patient) {
+        List<String> sections = new ArrayList<>();
+        append(sections, "主诉", chiefComplaint);
+        append(sections, "现病史", presentIllness);
+        append(sections, "诊断", diagnosis);
+        return desensitize(String.join("\n", sections), patient);
+    }
+
+    private String desensitize(String raw, Patient patient) {
+        if (raw == null || raw.isBlank()) {
             return "";
         }
         Desensitizer.PatientContext context = patient == null

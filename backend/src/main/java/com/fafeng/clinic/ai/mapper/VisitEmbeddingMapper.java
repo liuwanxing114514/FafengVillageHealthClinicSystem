@@ -2,6 +2,7 @@ package com.fafeng.clinic.ai.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.fafeng.clinic.ai.entity.VisitEmbedding;
+import com.fafeng.clinic.ai.model.SimilarVisitMatchRow;
 import com.fafeng.clinic.clinic.entity.ClinicVisit;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
@@ -90,4 +91,20 @@ public interface VisitEmbeddingMapper extends BaseMapper<VisitEmbedding> {
             WHERE ve.visit_id = cv.id AND cv.status = 'VOID'
             """)
     int deleteVoidVisitEmbeddings();
+
+    @Select("""
+            SELECT ve.visit_id AS visitId,
+                   ve.text_summary AS textSummary,
+                   cv.visit_time AS visitTime,
+                   1 - (ve.embedding <=> #{queryVector}::vector) AS similarity
+            FROM visit_embedding ve
+            INNER JOIN clinic_visit cv ON cv.id = ve.visit_id
+            WHERE cv.status = 'ACTIVE'
+              AND (#{excludeVisitId} IS NULL OR ve.visit_id <> #{excludeVisitId})
+            ORDER BY ve.embedding <=> #{queryVector}::vector
+            LIMIT #{limit}
+            """)
+    List<SimilarVisitMatchRow> searchSimilar(@Param("queryVector") String queryVector,
+                                             @Param("excludeVisitId") Long excludeVisitId,
+                                             @Param("limit") int limit);
 }

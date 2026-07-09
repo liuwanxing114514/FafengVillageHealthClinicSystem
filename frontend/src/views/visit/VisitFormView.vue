@@ -5,8 +5,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPatient, searchPatients } from '@/api/patient'
 import { listPrescriptionsByVisit } from '@/api/prescription'
 import { createVisit, deleteVisit, getVisit, getVisitFeeSummary, updateVisit } from '@/api/visit'
-import { getVoiceStatus, getAiStatus, structureVisit } from '@/api/ai'
+import { getVoiceStatus, getAiStatus, getEmbeddingStatus, structureVisit } from '@/api/ai'
 import QuickPatientDialog from '@/components/visit/QuickPatientDialog.vue'
+import SimilarVisitPanel from '@/components/visit/SimilarVisitPanel.vue'
 import VoiceInputButton from '@/components/visit/VoiceInputButton.vue'
 import QuickPhraseChips from '@/components/visit/QuickPhraseChips.vue'
 import { useTabTitle } from '@/composables/useTabTitle'
@@ -19,6 +20,7 @@ const saving = ref(false)
 const patientName = ref('')
 const voiceAvailable = ref(false)
 const aiAvailable = ref(false)
+const embeddingEnabled = ref(false)
 const structuring = ref(false)
 const showQuickPatient = ref(false)
 const patientSearching = ref(false)
@@ -289,18 +291,25 @@ onMounted(async () => {
     }
   }
   try {
-    const [voiceStatus, aiStatus] = await Promise.all([getVoiceStatus(), getAiStatus()])
+    const [voiceStatus, aiStatus, embeddingStatus] = await Promise.all([
+      getVoiceStatus(),
+      getAiStatus(),
+      getEmbeddingStatus(),
+    ])
     voiceAvailable.value = voiceStatus.available
     aiAvailable.value = aiStatus.enabled && aiStatus.providerAvailable
+    embeddingEnabled.value = embeddingStatus.enabled && embeddingStatus.configured
   } catch {
     voiceAvailable.value = false
     aiAvailable.value = false
+    embeddingEnabled.value = false
   }
 })
 </script>
 
 <template>
   <main class="page">
+    <div class="page-layout">
     <el-card v-loading="loading" shadow="never">
       <template #header>
         <div class="header-row">
@@ -455,6 +464,15 @@ onMounted(async () => {
         </el-form-item>
       </el-form>
     </el-card>
+    <SimilarVisitPanel
+      :chief-complaint="form.chiefComplaint"
+      :present-illness="form.presentIllness"
+      :diagnosis="form.diagnosis"
+      :patient-id="form.patientId || null"
+      :exclude-visit-id="visitId"
+      :embedding-enabled="embeddingEnabled"
+    />
+    </div>
     <QuickPatientDialog v-model:visible="showQuickPatient" @created="onQuickPatientCreated" />
   </main>
 </template>
@@ -463,6 +481,17 @@ onMounted(async () => {
 .page {
   min-height: 100vh;
   padding: 24px;
+}
+
+.page-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.page-layout > .el-card {
+  flex: 1;
+  min-width: 0;
 }
 
 .header-row {

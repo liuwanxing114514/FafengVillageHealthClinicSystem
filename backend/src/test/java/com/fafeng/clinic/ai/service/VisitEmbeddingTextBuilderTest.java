@@ -47,4 +47,25 @@ class VisitEmbeddingTextBuilderTest {
         visit.setUpdatedAt(OffsetDateTime.now());
         assertTrue(builder.buildDesensitizedSummary(visit, null).isBlank());
     }
+
+    @Test
+    void buildDesensitizedSearchQuery_usesChiefPresentDiagnosisOnly() {
+        Patient patient = new Patient();
+        patient.setName("李四");
+        patient.setPhone("13900001111");
+
+        String query = builder.buildDesensitizedSearchQuery(
+                "头痛2天",
+                "患者李四来电13900001111",
+                "偏头痛",
+                patient);
+
+        assertTrue(query.contains("主诉：头痛2天"));
+        assertTrue(query.contains("现病史："));
+        assertTrue(query.contains("诊断：偏头痛"));
+        assertFalse(query.contains("李四"));
+        assertTrue(query.contains("李*"));
+        assertTrue(query.contains("139****1111"));
+        assertFalse(query.contains("既往史"));
+    }
 }

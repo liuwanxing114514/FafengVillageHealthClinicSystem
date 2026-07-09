@@ -1,6 +1,9 @@
 package com.fafeng.clinic.ai.controller;
 
 import com.fafeng.clinic.ai.service.VisitEmbeddingService;
+import com.fafeng.clinic.ai.service.VisitSimilaritySearchService;
+import com.fafeng.clinic.ai.vo.SimilarVisitSearchResultVO;
+import com.fafeng.clinic.ai.vo.SimilarVisitVO;
 import com.fafeng.clinic.ai.vo.VisitEmbeddingStatusVO;
 import com.fafeng.clinic.ai.vo.VisitEmbeddingSyncResultVO;
 import com.fafeng.clinic.common.BusinessException;
@@ -14,10 +17,14 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.OffsetDateTime;
+import java.util.List;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -28,6 +35,9 @@ class VisitEmbeddingControllerTest {
 
     @MockBean
     private VisitEmbeddingService visitEmbeddingService;
+
+    @MockBean
+    private VisitSimilaritySearchService visitSimilaritySearchService;
 
     @Test
     @WithMockUser(username = "admin")
@@ -63,5 +73,34 @@ class VisitEmbeddingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.mode").value("full"))
                 .andExpect(jsonPath("$.data.synced").value(2));
+    }
+
+    @Test
+    @WithMockUser(username = "admin")
+    void searchSimilarReturnsTopItems() throws Exception {
+        when(visitSimilaritySearchService.search(any())).thenReturn(new SimilarVisitSearchResultVO(
+                true,
+                List.of(new SimilarVisitVO(
+                        12L,
+                        "主诉：咳嗽\n诊断：感冒",
+                        0.91,
+                        OffsetDateTime.parse("2025-06-01T08:00:00Z")))));
+
+        mockMvc.perform(post("/api/ai/embeddings/search-similar")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "chiefComplaint": "咳嗽",
+                                  "presentIllness": "3天",
+                                  "diagnosis": "感冒",
+                                  "patientId": 1,
+                                  "excludeVisitId": 5
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.available").value(true))
+                .andExpect(jsonPath("$.data.items[0].visitId").value(12))
+                .andExpect(jsonPath("$.data.items[0].similarity").value(0.91));
     }
 }

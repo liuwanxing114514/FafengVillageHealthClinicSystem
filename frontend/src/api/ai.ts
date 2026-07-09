@@ -9,7 +9,9 @@ import type {
   InboundDraftPayload,
   OcrStatus,
   OutboundDraftPayload,
+  SimilarVisitSearchResult,
   VisitDraftPayload,
+  VisitEmbeddingStatus,
   VoiceStatus,
   VoiceTranscription,
 } from '@/types/ai'
@@ -114,4 +116,18 @@ export function stringifyInboundPayload(payload: InboundDraftPayload): string {
 
 export function stringifyVisitPayload(payload: VisitDraftPayload): string {
   return JSON.stringify(payload)
+}
+
+export async function getEmbeddingStatus(): Promise<VisitEmbeddingStatus> {
+  return getData<VisitEmbeddingStatus>('/ai/embeddings/status')
+}
+
+export async function searchSimilarVisits(payload: {
+  chiefComplaint?: string
+  presentIllness?: string
+  diagnosis?: string
+  patientId?: number | null
+  excludeVisitId?: number | null
+}): Promise<SimilarVisitSearchResult> {
+  return postData<SimilarVisitSearchResult>('/ai/embeddings/search-similar', payload)
 }

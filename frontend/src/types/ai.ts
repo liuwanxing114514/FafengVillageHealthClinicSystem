@@ -94,3 +94,27 @@ export interface ApproveOutboundResult {
   lineCount: number
   flowCount: number
 }
+
+export interface SimilarVisitItem {
+  visitId: number
+  textSummary: string
+  similarity: number
+  visitTime: string
+}
+
+export interface SimilarVisitSearchResult {
+  available: boolean
+  items: SimilarVisitItem[]
+}
+
+export interface VisitEmbeddingStatus {
+  enabled: boolean
+  provider: string
+  model: string
+  dimensions: number
+  configured: boolean
+  activeVisitCount: number
+  syncedCount: number
+  pendingCount: number
+  latestSyncedAt: string | null
+}

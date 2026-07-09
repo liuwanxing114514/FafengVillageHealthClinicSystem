@@ -103,7 +103,7 @@ public class VisitEmbeddingService {
         }
 
         float[] vector = embeddingModel.embed(summary);
-        validateDimensions(vector);
+        validateDimensions(vector, embeddingProperties.getDimensions());
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         OffsetDateTime sourceUpdatedAt = visit.getUpdatedAt() == null ? now : visit.getUpdatedAt();
         visitEmbeddingMapper.upsertEmbedding(
@@ -118,10 +118,10 @@ public class VisitEmbeddingService {
         return true;
     }
 
-    private void validateDimensions(float[] vector) {
-        if (vector == null || vector.length != embeddingProperties.getDimensions()) {
+    static void validateDimensions(float[] vector, int expectedDimensions) {
+        if (vector == null || vector.length != expectedDimensions) {
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "向量维度与配置不一致，期望 " + embeddingProperties.getDimensions()
+                    "向量维度与配置不一致，期望 " + expectedDimensions
                             + "，实际 " + (vector == null ? 0 : vector.length));
         }
     }

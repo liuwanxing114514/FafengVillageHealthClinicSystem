@@ -35,6 +35,7 @@
 | `LocalAiProvider` | 远期 | Ollama / 本地模型 |
 | `UnconfiguredAiChatClient` | v2.0.2 | AI 未启用时的占位 |
 | `VisitEmbeddingService` | v2.2 | 脱敏拼接 → Embedding → `visit_embedding` |
+| `VisitSimilaritySearchService` | v2.3 | 脱敏查询 → embed → pgvector 余弦 Top-3 |
 | `EmbeddingConfiguration` | v2.2 | 条件装配 `OpenAiEmbeddingModel`（openai/local） |
 
 ---
@@ -149,12 +150,21 @@ Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → Spring AI `Chat
 - `GET /api/ai/embeddings/status` — 向量化状态（v2.2）
 - `POST /api/ai/embeddings/sync-full` — 全量向量化同步（v2.2）
 - `POST /api/ai/embeddings/sync-incremental` — 增量向量化同步（v2.2）
+- `POST /api/ai/embeddings/search-similar` — 相似病例 Top-3（v2.3，脱敏摘要 + 相似度）
 
 ### 6.4 前端
 
 - `AiAssistantView`：对话、工具调用时间线、待确认出库卡片
 - `OutboundDraftView`：核对 OUTBOUND 草稿、FEFO 批次、确认出库后跳转处方打印（v2.1）
 - `PrescriptionFormView`：保存处方后「生成待出库清单」→ 跳转出库草稿页（v2.1）
+- `VisitFormView`：病历录入页侧边相似病例 Top-3（v2.3，仅供参考）
+
+### 6.5 相似病例检索（v2.3）
+
+1. 前端根据当前主诉、现病史、诊断（及患者上下文）调用 `search-similar`。
+2. 后端 `VisitEmbeddingTextBuilder.buildDesensitizedSearchQuery` 脱敏后本地 embed。
+3. PostgreSQL `visit_embedding` 表按余弦距离（`<=>`）取 Top-3，返回已脱敏 `text_summary` 与相似度。
+4. 未启用向量化、无查询文本或 API 失败时返回空列表，**不阻塞病历保存**。
 
 ---
 
@@ -205,3 +215,4 @@ CLINIC_EMBEDDING_DIMENSIONS=1024
 | v2.0.2 | Spring AI：ChatClient 替换 HttpDeepSeekClient；@Tool 替换 JSON 编排；DesensitizationAdvisor |
 | v2.1 | 处方→出库→打印：`approveOutbound`、处方页生成 OUTBOUND 草稿、`OutboundDraftView` 确认出库 |
 | v2.2 | `visit_embedding`、脱敏向量化、`VisitEmbeddingService`、硅基流动/本地 Embedding API |
+| v2.3 | 相似病例检索：`VisitSimilaritySearchService`、病历页 `SimilarVisitPanel` |

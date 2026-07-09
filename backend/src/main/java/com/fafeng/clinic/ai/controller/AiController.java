@@ -3,6 +3,7 @@ package com.fafeng.clinic.ai.controller;
 import com.fafeng.clinic.ai.dto.ApproveOutboundDraftRequest;
 import com.fafeng.clinic.ai.dto.ApproveVisitDraftRequest;
 import com.fafeng.clinic.ai.dto.CreateAiDraftRequest;
+import com.fafeng.clinic.ai.dto.SimilarVisitSearchRequest;
 import com.fafeng.clinic.ai.dto.StructureVisitRequest;
 import com.fafeng.clinic.ai.dto.UpdateAiDraftPayloadRequest;
 import com.fafeng.clinic.ai.dto.UpdateAiDraftStatusRequest;
@@ -10,6 +11,8 @@ import com.fafeng.clinic.ai.service.AiDraftService;
 import com.fafeng.clinic.ai.service.AiInboundOcrService;
 import com.fafeng.clinic.ai.service.AiVisitStructureService;
 import com.fafeng.clinic.ai.service.VisitEmbeddingService;
+import com.fafeng.clinic.ai.service.VisitSimilaritySearchService;
+import com.fafeng.clinic.ai.vo.SimilarVisitSearchResultVO;
 import com.fafeng.clinic.ai.vo.AiDraftVO;
 import com.fafeng.clinic.ai.vo.AiStatusVO;
 import com.fafeng.clinic.ai.vo.ApproveInboundResultVO;
@@ -43,6 +46,7 @@ public class AiController {
     private final AiVisitStructureService visitStructureService;
     private final AiInboundOcrService inboundOcrService;
     private final VisitEmbeddingService visitEmbeddingService;
+    private final VisitSimilaritySearchService visitSimilaritySearchService;
 
     @GetMapping("/embeddings/status")
     public Result<VisitEmbeddingStatusVO> embeddingStatus() {
@@ -57,6 +61,12 @@ public class AiController {
     @PostMapping("/embeddings/sync-incremental")
     public Result<VisitEmbeddingSyncResultVO> syncEmbeddingsIncremental() {
         return Result.ok(visitEmbeddingService.syncIncremental());
+    }
+
+    @PostMapping("/embeddings/search-similar")
+    public Result<SimilarVisitSearchResultVO> searchSimilarVisits(
+            @Valid @RequestBody SimilarVisitSearchRequest request) {
+        return Result.ok(visitSimilaritySearchService.search(request));
     }
 
     @GetMapping("/status")
