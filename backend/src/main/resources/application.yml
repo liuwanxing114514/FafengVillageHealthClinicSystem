@@ -31,12 +31,14 @@ clinic:
     deepseek-api-key: ${DEEPSEEK_API_KEY:}
     deepseek-base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
     deepseek-model: ${DEEPSEEK_MODEL:deepseek-chat}
-    visit-structure-prompt: ${CLINIC_AI_VISIT_PROMPT:}
     local-base-url: ${LOCAL_AI_BASE_URL:http://localhost:11434}
   voice:
     whisper-url: ${CLINIC_WHISPER_URL:}
     upload-dir: ${CLINIC_VOICE_UPLOAD_DIR:uploads/audio}
     save-audio: ${CLINIC_VOICE_SAVE_AUDIO:true}
+  ocr:
+    ocr-url: ${CLINIC_OCR_URL:}
+    upload-dir: ${CLINIC_OCR_UPLOAD_DIR:uploads/images}
 
 mybatis-plus:
   configuration:

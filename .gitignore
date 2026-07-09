@@ -52,3 +52,6 @@ uploads/
 *.tmp
 *.temp
 ~$*
+
+# Local deploy artifacts
+dist/

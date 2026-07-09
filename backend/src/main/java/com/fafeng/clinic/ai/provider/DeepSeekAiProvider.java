@@ -22,16 +22,11 @@ public class DeepSeekAiProvider implements AiProvider {
 
     @Override
     public boolean isAvailable() {
-        return properties.isEnabled()
-                && deepSeekClient.isConfigured();
+        return properties.isEnabled() && deepSeekClient.isConfigured();
     }
 
+    @Override
     public String chatCompletion(String systemPrompt, String userMessage) {
-        if (!isAvailable()) {
-            throw new com.fafeng.clinic.common.BusinessException(
-                    com.fafeng.clinic.common.ErrorCode.SERVICE_UNAVAILABLE,
-                    "DeepSeek AI 未启用或未配置 API Key");
-        }
         return deepSeekClient.chatCompletion(systemPrompt, userMessage);
     }
 }

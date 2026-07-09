@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Camera, UploadFilled } from '@element-plus/icons-vue'
+import { getAiStatus, getOcrStatus, ocrInbound } from '@/api/ai'
 import { inbound } from '@/api/inventory'
 import { searchMedicines } from '@/api/medicine'
 import BarcodeScanPanel from '@/components/inventory/BarcodeScanPanel.vue'
@@ -9,9 +11,13 @@ import type { MedicineListItem } from '@/types/medicine'
 
 const router = useRouter()
 const saving = ref(false)
+const ocrLoading = ref(false)
+const aiEnabled = ref(false)
+const ocrAvailable = ref(false)
 const medicineOptions = ref<MedicineListItem[]>([])
 const scanDialogVisible = ref(false)
 const scannedMedicine = ref<MedicineListItem | null>(null)
+const ocrInputRef = ref<HTMLInputElement | null>(null)
 
 const form = reactive({
   medicineId: null as number | null,
@@ -33,6 +39,17 @@ const scanForm = reactive({
   purchasePrice: null as number | null,
   supplier: '',
   remark: '',
+})
+
+onMounted(async () => {
+  try {
+    const [aiStatus, ocrStatus] = await Promise.all([getAiStatus(), getOcrStatus()])
+    aiEnabled.value = aiStatus.enabled && aiStatus.providerAvailable
+    ocrAvailable.value = ocrStatus.available
+  } catch {
+    aiEnabled.value = false
+    ocrAvailable.value = false
+  }
 })
 
 async function searchMedicineOptions(keyword: string) {
@@ -59,6 +76,25 @@ function onBarcodeMatched(medicine: MedicineListItem) {
   scanForm.supplier = ''
   scanForm.remark = ''
   scanDialogVisible.value = true
+}
+
+function triggerOcrUpload() {
+  ocrInputRef.value?.click()
+}
+
+async function onOcrFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  ocrLoading.value = true
+  try {
+    const draft = await ocrInbound(file)
+    ElMessage.success('识别完成，请核对草稿')
+    router.push(`/ai/drafts/inbound/${draft.id}`)
+  } finally {
+    ocrLoading.value = false
+  }
 }
 
 async function onScanSubmit() {
@@ -113,7 +149,38 @@ async function onSubmit() {
 
 <template>
   <main class="page">
-    <el-card shadow="never">
+    <el-card v-if="ocrAvailable && aiEnabled" shadow="never" class="section-card">
+      <template #header>
+        <span>拍照 / 上传进货单（OCR）</span>
+      </template>
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        title="支持打印版清单、发票、送货单。识别后生成待审核表格，批准后才入库。"
+        style="margin-bottom: 16px"
+      />
+      <el-space>
+        <el-button type="primary" :loading="ocrLoading" @click="triggerOcrUpload">
+          <el-icon><UploadFilled /></el-icon>
+          上传图片
+        </el-button>
+        <el-button :loading="ocrLoading" @click="triggerOcrUpload">
+          <el-icon><Camera /></el-icon>
+          拍照识别
+        </el-button>
+      </el-space>
+      <input
+        ref="ocrInputRef"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        class="hidden-input"
+        @change="onOcrFileChange"
+      />
+    </el-card>
+
+    <el-card shadow="never" class="section-card">
       <template #header>
         <span>手动入库</span>
       </template>
@@ -207,5 +274,6 @@ async function onSubmit() {
 
 <style scoped>
 .page { min-height: 100vh; padding: 24px; }
-.header-row { display: flex; justify-content: space-between; align-items: center; }
+.section-card { margin-bottom: 16px; }
+.hidden-input { display: none; }
 </style>
