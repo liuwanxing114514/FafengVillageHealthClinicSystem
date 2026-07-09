@@ -36,6 +36,10 @@
 | | v2.1 | 流程自动化 | 5.17 |
 | 第六期：RAG 知识库 | v2.2 | 脱敏病历向量化 | 5.14 |
 | | v2.3 | 相似病例检索 | 5.15 |
+| 第七期：AI 运维与扩展 | v2.4 | RAG 运维与 Embedding 管理 | 5.19 |
+| | v2.5 | 本地 LLM 接入 | 3.4、5.18 |
+| | v2.6 | 导出与病历 PDF | 5.20 |
+| | **v3.0** | **AI 全功能可部署基线** | 七、八 |
 
 ---
 
@@ -638,6 +642,113 @@
 - 病历录入页：根据当前主诉/现病史/诊断检索 Top-3 相似历史病例。
 - 仅展示脱敏后的摘要，供医生参考。
 - 明确 UI 提示：「仅供参考，不替代诊断」。
+
+---
+
+## 第七期：AI 运维与扩展（v2.4–v3.0）
+
+**前置依赖**：v2.3（RAG 检索可用）、v2.0.2（Spring AI）
+
+目标：让诊所**长期稳定使用**全部 AI 能力，并补齐日常运维与导出便利；**不新增诊断建议类 AI**。
+
+---
+
+### v2.4 RAG 运维与 Embedding 管理
+
+**分支**：`v2.4-rag-ops`
+
+**交付**：
+
+- 系统设置页（或独立管理区）：展示 Embedding 状态（`GET /api/ai/embeddings/status` 已有字段）。
+- 一键触发全量 / 增量同步（复用现有 `sync-full` / `sync-incremental` API）。
+- 同步结果 toast（成功/失败条数、耗时）；进行中 loading，防重复点击。
+- 展示 `pendingCount`、`latestSyncedAt`；`CLINIC_EMBEDDING_ENABLED=false` 时隐藏或禁用操作并说明原因。
+- 文档：`DEPLOYMENT.md` 补充「首次启用 RAG 后需全量同步」SOP。
+
+**不做**：
+
+- 不改 v2.2 同步算法、不改向量模型。
+- 不做相似检索算法调优（属 v2.3，本版仅运维入口）。
+
+**验收**：
+
+- 管理员可在 UI 触发同步并看到状态变化。
+- Embedding 关闭时页面不报错，基础业务不受影响。
+
+---
+
+### v2.5 本地 LLM 接入
+
+**分支**：`v2.5-local-llm`
+
+**交付**：
+
+- 实装 `LocalAiProvider`：通过 OpenAI 兼容接口接 **Ollama / LM Studio**（Chat）。
+- `clinic.ai.provider=local` 时：结构化整理、Agent 对话走本地 `ChatClient`（与 v2.0.2 条件 Bean 一致）。
+- Embedding：`CLINIC_EMBEDDING_PROVIDER=local` 端到端验证（bge 或本地 embed 模型）。
+- `.env.example` / `application.yml` / `DEPLOYMENT.md`：本地模型部署与切换说明。
+- 单元测试：mock 或 Testcontainers 可选；至少 provider 切换与 noop 降级测试。
+
+**不做**：
+
+- 不捆绑特定模型权重；不实现模型训练/微调。
+- Whisper / OCR 容器改造（仍独立 HTTP 服务）。
+
+**验收**：
+
+- 断外网 + 本地 Ollama 可用时，Agent 查询与 AI 整理可用。
+- `provider=noop` 或本地不可达时，基础业务无报错。
+
+---
+
+### v2.6 导出与病历 PDF
+
+**分支**：`v2.6-export-pdf`
+
+**交付**：
+
+- **库存流水页**：按当前筛选条件导出 Excel（固定列，与列表字段一致；不含任意表头适配）。
+- **病历详情/录入页**：「保存 PDF」按钮（复用 v1.6 处方页 `html2pdf.js` 方案或同等实现）。
+- PDF 文件名规范，如 `病历-{id}-{日期}.pdf`；A4 可打印布局。
+- 导出/PDF 失败时友好提示，不阻塞页面其他操作。
+
+**不做**：
+
+- 不做自定义报表设计器、不做批量导出全部历史库。
+- 不在 PDF 中打印参考进货成本等仅内部字段（与 v1.6 一致）。
+
+**验收**：
+
+- 流水 Excel 与页面筛选结果一致。
+- 病历 PDF 含主诉/诊断等正文，布局可读。
+
+---
+
+### v3.0 AI 全功能可部署基线
+
+**分支**：`v3.0-ai-release`
+
+**前置依赖**：v2.3 + 建议 v2.4–v2.6 已合并 `develop`
+
+**目标**：诊所可**长期稳定运行**含 AI/RAG/Agent 的完整系统（对标 v1.0，但覆盖第二期–第七期全部能力）。
+
+**交付**：
+
+- `docker-compose.yml` + profile 文档：postgres、backend、frontend、whisper、ocr 一键说明。
+- `DEPLOYMENT.md`：**完整验收清单**（v1.0 基线 + v1.1–v2.3 + v2.4–v2.6 增量项）。
+- `README.md`：功能一览与最低配置（可完全关闭 AI 运行）。
+- 演示数据脚本：可选刷新，含若干脱敏样例病历供 RAG 自测。
+- 关键 smoke：文档化手工验收步骤（或补充少量集成测试）；`mvn test` + `npm run build` 全绿。
+
+**不做**：
+
+- 不新增业务功能；不顺带大重构。
+- 不强制诊所启用全部 AI 容器。
+
+**验收**：
+
+- 按 DEPLOYMENT v3.0 清单逐项通过。
+- AI 全关时与 v1.0 同等稳定；按需开启 Whisper/OCR/Embedding/Agent 均可独立工作。
 
 ---
 
