@@ -1,3 +1,11 @@
+# 发凤村卫生室 — Docker Compose
+# 生产（群晖 DS920+）：默认仅 core 三服务
+#   docker compose up -d --build
+# 可选 OCR 入库：docker compose --profile ocr up -d --build
+# Whisper 默认不部署（手机用输入法语音）；若需页面内录音：
+#   docker compose --profile whisper up -d --build 且 CLINIC_WHISPER_URL=http://whisper-service:9000
+# 详见 docs/共用/DEPLOYMENT.md
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -59,7 +67,7 @@ services:
     ports:
       - "${FRONTEND_PORT:-80}:80"
 
-  # v1.1 可选：docker compose --profile whisper up -d
+  # v1.1 可选（生产默认不启；手机请用输入法语音）：--profile whisper
   whisper-service:
     image: onerahmet/openai-whisper-asr-webservice:latest
     container_name: clinic-whisper
