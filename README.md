@@ -5,6 +5,8 @@
 
 **仓库地址**：https://github.com/liuwanxing114514/FafengVillageHealthClinicSystem
 
+[![CI](https://github.com/liuwanxing114514/FafengVillageHealthClinicSystem/actions/workflows/ci.yml/badge.svg)](https://github.com/liuwanxing114514/FafengVillageHealthClinicSystem/actions/workflows/ci.yml)
+
 [![Java 21](https://img.shields.io/badge/Java-21-blue)](backend/)
 [![Spring Boot 3.4](https://img.shields.io/badge/Spring%20Boot-3.4-green)](backend/)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883)](frontend/)
@@ -134,7 +136,7 @@ docker-compose.yml
 docs/             架构设计、部署、路线图、测试清单
 ```
 
-架构细节：[`docs/设计/v0.1-架构设计.md`](docs/设计/v0.1-架构设计.md) · AI 与脱敏：[`docs/给Agent/AI架构.md`](docs/给Agent/AI架构.md)
+架构细节：[`ARCHITECTURE.md`](ARCHITECTURE.md) · 设计文档：[`docs/设计/v0.1-架构设计.md`](docs/设计/v0.1-架构设计.md) · AI 与脱敏：[`docs/给Agent/AI架构.md`](docs/给Agent/AI架构.md)
 
 ---
 
@@ -142,6 +144,7 @@ docs/             架构设计、部署、路线图、测试清单
 
 | 文档 | 说明 |
 | --- | --- |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | 一页架构：库存、RAG、安全边界 |
 | [DEPLOYMENT.md](docs/共用/DEPLOYMENT.md) | 生产部署（群晖 NAS）、备份恢复、版本升级 |
 | [ROADMAP.md](docs/共用/ROADMAP.md) | 版本划分权威来源 |
 | [测试清单.md](docs/共用/测试清单.md) | 本地 / NAS 验收项 |
