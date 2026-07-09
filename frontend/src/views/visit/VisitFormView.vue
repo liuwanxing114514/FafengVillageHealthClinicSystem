@@ -557,8 +557,10 @@ onMounted(async () => {
 
 .header-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 
 .title {
@@ -568,7 +570,10 @@ onMounted(async () => {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .patient-line {
@@ -622,6 +627,12 @@ onMounted(async () => {
   left: -10000px;
   top: 0;
   pointer-events: none;
+}
+
+@media (max-width: 1100px) {
+  .page-layout {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 768px) {
