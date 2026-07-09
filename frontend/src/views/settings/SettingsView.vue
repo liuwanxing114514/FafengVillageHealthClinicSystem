@@ -97,6 +97,14 @@ onMounted(loadSettings)
 
       <el-divider />
 
+      <h3 class="section">快捷语</h3>
+      <p class="hint">管理病历录入常用文本，也可在录入页点击候选语快速填入。</p>
+      <el-button type="primary" plain @click="router.push('/settings/quick-phrases')">
+        管理快捷语
+      </el-button>
+
+      <el-divider />
+
       <el-button type="danger" plain @click="onLogout">退出登录</el-button>
     </el-card>
   </main>
@@ -129,5 +137,11 @@ onMounted(loadSettings)
   margin: 0 0 12px;
   font-size: 1rem;
   color: #303133;
+}
+
+.hint {
+  margin: 0 0 12px;
+  color: #909399;
+  font-size: 14px;
 }
 </style>

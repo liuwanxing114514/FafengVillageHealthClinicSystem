@@ -6,6 +6,7 @@ import { getPatient } from '@/api/patient'
 import { createVisit, deleteVisit, getVisit, updateVisit } from '@/api/visit'
 import { getVoiceStatus } from '@/api/ai'
 import VoiceInputButton from '@/components/visit/VoiceInputButton.vue'
+import QuickPhraseChips from '@/components/visit/QuickPhraseChips.vue'
 import { useTabTitle } from '@/composables/useTabTitle'
 
 const route = useRoute()
@@ -138,6 +139,13 @@ async function onSave() {
   }
 }
 
+function goAiStructure() {
+  const query: Record<string, string> = {}
+  if (form.patientId) query.patientId = String(form.patientId)
+  if (visitId.value) query.visitId = String(visitId.value)
+  router.push({ path: '/ai', query })
+}
+
 function goBack() {
   if (form.patientId) {
     router.push(`/patient/${form.patientId}`)
@@ -185,6 +193,7 @@ onMounted(async () => {
         <div class="header-row">
           <span class="title">{{ isNew ? '新建病历' : '病历详情' }}</span>
           <div class="actions">
+            <el-button @click="goAiStructure">AI 整理</el-button>
             <el-button @click="goBack">返回患者</el-button>
             <el-button v-if="!isNew" @click="goPrescription">开处方</el-button>
             <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
@@ -205,21 +214,30 @@ onMounted(async () => {
           />
         </el-form-item>
         <el-form-item label="主诉">
-          <div class="field-with-voice">
-            <el-input v-model="form.chiefComplaint" type="textarea" :rows="2" />
-            <VoiceInputButton v-model="form.chiefComplaint" :available="voiceAvailable" />
+          <div class="field-stack">
+            <div class="field-with-voice">
+              <el-input v-model="form.chiefComplaint" type="textarea" :rows="2" />
+              <VoiceInputButton v-model="form.chiefComplaint" :available="voiceAvailable" />
+            </div>
+            <QuickPhraseChips v-model="form.chiefComplaint" field-key="chief_complaint" />
           </div>
         </el-form-item>
         <el-form-item label="现病史">
-          <div class="field-with-voice">
-            <el-input v-model="form.presentIllness" type="textarea" :rows="3" />
-            <VoiceInputButton v-model="form.presentIllness" :available="voiceAvailable" />
+          <div class="field-stack">
+            <div class="field-with-voice">
+              <el-input v-model="form.presentIllness" type="textarea" :rows="3" />
+              <VoiceInputButton v-model="form.presentIllness" :available="voiceAvailable" />
+            </div>
+            <QuickPhraseChips v-model="form.presentIllness" field-key="present_illness" />
           </div>
         </el-form-item>
         <el-form-item label="既往史">
-          <div class="field-with-voice">
-            <el-input v-model="form.pastHistory" type="textarea" :rows="2" />
-            <VoiceInputButton v-model="form.pastHistory" :available="voiceAvailable" />
+          <div class="field-stack">
+            <div class="field-with-voice">
+              <el-input v-model="form.pastHistory" type="textarea" :rows="2" />
+              <VoiceInputButton v-model="form.pastHistory" :available="voiceAvailable" />
+            </div>
+            <QuickPhraseChips v-model="form.pastHistory" field-key="past_history" />
           </div>
         </el-form-item>
         <el-form-item label="体温(℃)">
@@ -241,27 +259,39 @@ onMounted(async () => {
           <el-input v-model="form.pulse" maxlength="64" />
         </el-form-item>
         <el-form-item label="过敏史">
-          <div class="field-with-voice">
-            <el-input v-model="form.allergyHistory" type="textarea" :rows="2" />
-            <VoiceInputButton v-model="form.allergyHistory" :available="voiceAvailable" />
+          <div class="field-stack">
+            <div class="field-with-voice">
+              <el-input v-model="form.allergyHistory" type="textarea" :rows="2" />
+              <VoiceInputButton v-model="form.allergyHistory" :available="voiceAvailable" />
+            </div>
+            <QuickPhraseChips v-model="form.allergyHistory" field-key="allergy_history" />
           </div>
         </el-form-item>
         <el-form-item label="诊断">
-          <div class="field-with-voice">
-            <el-input v-model="form.diagnosis" type="textarea" :rows="2" />
-            <VoiceInputButton v-model="form.diagnosis" :available="voiceAvailable" />
+          <div class="field-stack">
+            <div class="field-with-voice">
+              <el-input v-model="form.diagnosis" type="textarea" :rows="2" />
+              <VoiceInputButton v-model="form.diagnosis" :available="voiceAvailable" />
+            </div>
+            <QuickPhraseChips v-model="form.diagnosis" field-key="diagnosis" />
           </div>
         </el-form-item>
         <el-form-item label="处理意见">
-          <div class="field-with-voice">
-            <el-input v-model="form.treatment" type="textarea" :rows="3" />
-            <VoiceInputButton v-model="form.treatment" :available="voiceAvailable" />
+          <div class="field-stack">
+            <div class="field-with-voice">
+              <el-input v-model="form.treatment" type="textarea" :rows="3" />
+              <VoiceInputButton v-model="form.treatment" :available="voiceAvailable" />
+            </div>
+            <QuickPhraseChips v-model="form.treatment" field-key="treatment" />
           </div>
         </el-form-item>
         <el-form-item label="备注">
-          <div class="field-with-voice">
-            <el-input v-model="form.remark" type="textarea" :rows="2" />
-            <VoiceInputButton v-model="form.remark" :available="voiceAvailable" />
+          <div class="field-stack">
+            <div class="field-with-voice">
+              <el-input v-model="form.remark" type="textarea" :rows="2" />
+              <VoiceInputButton v-model="form.remark" :available="voiceAvailable" />
+            </div>
+            <QuickPhraseChips v-model="form.remark" field-key="remark" />
           </div>
         </el-form-item>
         <el-form-item v-if="!isNew">
@@ -312,5 +342,9 @@ onMounted(async () => {
 
 .field-with-voice :deep(.el-textarea) {
   flex: 1;
+}
+
+.field-stack {
+  width: 100%;
 }
 </style>

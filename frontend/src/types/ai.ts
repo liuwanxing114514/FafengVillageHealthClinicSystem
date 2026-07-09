@@ -22,3 +22,16 @@ export interface AiDraft {
   createdAt: string
   updatedAt: string
 }
+
+export interface VisitDraftPayload {
+  patientId: number | null
+  visitId: number | null
+  inputText: string
+  chiefComplaint: string | null
+  presentIllness: string | null
+  pastHistory: string | null
+  allergyHistory: string | null
+  diagnosis: string | null
+  treatment: string | null
+  remark: string | null
+}

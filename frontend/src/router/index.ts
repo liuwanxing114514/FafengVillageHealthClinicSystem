@@ -6,6 +6,7 @@ import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/login/LoginView.vue'
 import SetupView from '@/views/setup/SetupView.vue'
 import SettingsView from '@/views/settings/SettingsView.vue'
+import QuickPhraseManageView from '@/views/settings/QuickPhraseManageView.vue'
 import MedicineListView from '@/views/medicine/MedicineListView.vue'
 import MedicineEditView from '@/views/medicine/MedicineEditView.vue'
 import MedicineImportView from '@/views/medicine/MedicineImportView.vue'
@@ -19,6 +20,7 @@ import OutboundView from '@/views/inventory/OutboundView.vue'
 import FlowListView from '@/views/inventory/FlowListView.vue'
 import AlertListView from '@/views/inventory/AlertListView.vue'
 import AiAssistantView from '@/views/ai/AiAssistantView.vue'
+import AiDraftDetailView from '@/views/ai/AiDraftDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -57,6 +59,12 @@ const router = createRouter({
           name: 'settings',
           component: SettingsView,
           meta: { title: '设置' },
+        },
+        {
+          path: 'settings/quick-phrases',
+          name: 'quick-phrases',
+          component: QuickPhraseManageView,
+          meta: { title: '快捷语' },
         },
         {
           path: 'medicine',
@@ -111,6 +119,12 @@ const router = createRouter({
           name: 'ai-assistant',
           component: AiAssistantView,
           meta: { title: 'AI 助手' },
+        },
+        {
+          path: 'ai/drafts/:id',
+          name: 'ai-draft-detail',
+          component: AiDraftDetailView,
+          meta: { title: 'AI 草稿' },
         },
         {
           path: 'inventory/inbound',
