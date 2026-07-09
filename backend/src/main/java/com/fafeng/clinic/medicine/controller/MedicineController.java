@@ -11,7 +11,10 @@ import com.fafeng.clinic.medicine.vo.ConversionVO;
 import com.fafeng.clinic.medicine.vo.MedicineDetailVO;
 import com.fafeng.clinic.medicine.vo.MedicineListItemVO;
 import com.fafeng.clinic.medicine.vo.PageVO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -25,16 +28,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 药品资料、单位换算与条码维护 API。
+ */
+@Tag(name = "药品", description = "药品建档、换算、条码与扫码匹配")
 @RestController
 @RequestMapping("/api/medicines")
+@RequiredArgsConstructor
 public class MedicineController {
 
     private final MedicineService medicineService;
 
-    public MedicineController(MedicineService medicineService) {
-        this.medicineService = medicineService;
-    }
-
+    @Operation(summary = "药品列表")
     @GetMapping
     public Result<PageVO<MedicineListItemVO>> search(
             @RequestParam(required = false) String keyword,
@@ -44,21 +49,25 @@ public class MedicineController {
         return Result.ok(medicineService.search(keyword, status, page, size));
     }
 
+    @Operation(summary = "按条码查药品", description = "扫码入库/出库匹配")
     @GetMapping("/by-barcode/{code}")
     public Result<MedicineListItemVO> findByBarcode(@PathVariable String code) {
         return Result.ok(medicineService.findByBarcode(code));
     }
 
+    @Operation(summary = "新建药品")
     @PostMapping
     public Result<MedicineDetailVO> create(@Valid @RequestBody SaveMedicineRequest request) {
         return Result.ok(medicineService.create(request));
     }
 
+    @Operation(summary = "药品详情")
     @GetMapping("/{id}")
     public Result<MedicineDetailVO> detail(@PathVariable Long id) {
         return Result.ok(medicineService.getDetail(id));
     }
 
+    @Operation(summary = "更新药品")
     @PutMapping("/{id}")
     public Result<MedicineDetailVO> update(
             @PathVariable Long id,
@@ -66,6 +75,7 @@ public class MedicineController {
         return Result.ok(medicineService.update(id, request));
     }
 
+    @Operation(summary = "启用/停用药品")
     @PatchMapping("/{id}/status")
     public Result<MedicineDetailVO> updateStatus(
             @PathVariable Long id,
@@ -73,6 +83,7 @@ public class MedicineController {
         return Result.ok(medicineService.updateStatus(id, request));
     }
 
+    @Operation(summary = "软删除药品")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         medicineService.delete(id);

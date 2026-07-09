@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.clinic.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -16,7 +17,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class VisitFeeService {
 
     private final PrescriptionMapper prescriptionMapper;
@@ -24,15 +28,6 @@ public class VisitFeeService {
     private final MedicineMapper medicineMapper;
     private final MedicineUnitConversionMapper conversionMapper;
 
-    public VisitFeeService(PrescriptionMapper prescriptionMapper,
-                           PrescriptionItemMapper prescriptionItemMapper,
-                           MedicineMapper medicineMapper,
-                           MedicineUnitConversionMapper conversionMapper) {
-        this.prescriptionMapper = prescriptionMapper;
-        this.prescriptionItemMapper = prescriptionItemMapper;
-        this.medicineMapper = medicineMapper;
-        this.conversionMapper = conversionMapper;
-    }
 
     public VisitFeeSummaryVO summarizeForVisit(Long visitId) {
         List<Prescription> prescriptions = prescriptionMapper.selectList(new LambdaQueryWrapper<Prescription>()

@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.patient.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -23,20 +24,16 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class PatientService {
 
     private final PatientMapper patientMapper;
     private final ClinicVisitMapper visitMapper;
     private final AuditLogService auditLogService;
 
-    public PatientService(PatientMapper patientMapper,
-                          ClinicVisitMapper visitMapper,
-                          AuditLogService auditLogService) {
-        this.patientMapper = patientMapper;
-        this.visitMapper = visitMapper;
-        this.auditLogService = auditLogService;
-    }
 
     public PageVO<PatientListItemVO> search(PatientSearchQuery query, int page, int size) {
         int safePage = Math.max(page, 1);

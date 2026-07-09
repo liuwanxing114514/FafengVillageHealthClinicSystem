@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.system.service;
 
 import com.fafeng.clinic.common.BusinessException;
@@ -21,7 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     public static final String USERNAME_ADMIN = "admin";
@@ -31,16 +35,6 @@ public class AuthService {
     private final AuditLogService auditLogService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthService(
-            SysUserMapper sysUserMapper,
-            PasswordEncoder passwordEncoder,
-            AuditLogService auditLogService,
-            AuthenticationManager authenticationManager) {
-        this.sysUserMapper = sysUserMapper;
-        this.passwordEncoder = passwordEncoder;
-        this.auditLogService = auditLogService;
-        this.authenticationManager = authenticationManager;
-    }
 
     public void login(LoginRequest request, HttpServletRequest httpRequest) {
         Authentication authentication = authenticationManager.authenticate(

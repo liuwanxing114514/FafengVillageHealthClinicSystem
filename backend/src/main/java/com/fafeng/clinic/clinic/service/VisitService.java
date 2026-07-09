@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.clinic.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -25,7 +26,13 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 门诊病历 CRUD、搜索与就诊收费（应收/实收/欠款）。
+ */
 @Service
+@RequiredArgsConstructor
 public class VisitService {
 
     private final ClinicVisitMapper visitMapper;
@@ -34,17 +41,6 @@ public class VisitService {
     private final QuickPhraseService quickPhraseService;
     private final VisitFeeService visitFeeService;
 
-    public VisitService(ClinicVisitMapper visitMapper,
-                        PatientService patientService,
-                        AuditLogService auditLogService,
-                        QuickPhraseService quickPhraseService,
-                        VisitFeeService visitFeeService) {
-        this.visitMapper = visitMapper;
-        this.patientService = patientService;
-        this.auditLogService = auditLogService;
-        this.quickPhraseService = quickPhraseService;
-        this.visitFeeService = visitFeeService;
-    }
 
     public PageVO<VisitListItemVO> search(VisitSearchQuery query, int page, int size) {
         int safePage = Math.max(page, 1);

@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.system.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -10,14 +11,14 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class ClinicUserDetailsService implements UserDetailsService {
 
     private final SysUserMapper sysUserMapper;
 
-    public ClinicUserDetailsService(SysUserMapper sysUserMapper) {
-        this.sysUserMapper = sysUserMapper;
-    }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

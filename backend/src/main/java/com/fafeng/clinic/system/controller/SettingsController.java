@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.system.controller;
 
 import com.fafeng.clinic.common.Result;
@@ -14,15 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/settings")
+@RequiredArgsConstructor
 public class SettingsController {
 
     private final SettingsService settingsService;
 
-    public SettingsController(SettingsService settingsService) {
-        this.settingsService = settingsService;
-    }
 
     @GetMapping
     public Result<List<SettingVO>> list() {

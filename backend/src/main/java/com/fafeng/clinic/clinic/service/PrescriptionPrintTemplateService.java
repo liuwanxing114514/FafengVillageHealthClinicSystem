@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.clinic.service;
 
 import com.fafeng.clinic.system.service.SettingsService;
@@ -6,7 +7,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class PrescriptionPrintTemplateService {
 
     public static final String KEY_ACTIVE = "prescription_print_active_template";
@@ -15,9 +19,6 @@ public class PrescriptionPrintTemplateService {
 
     private final SettingsService settingsService;
 
-    public PrescriptionPrintTemplateService(SettingsService settingsService) {
-        this.settingsService = settingsService;
-    }
 
     public String getActiveTemplate() {
         return readValue(KEY_ACTIVE, DEFAULT_ACTIVE);

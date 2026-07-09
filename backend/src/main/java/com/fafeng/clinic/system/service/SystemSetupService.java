@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.system.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -14,21 +15,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class SystemSetupService {
 
     private final SysUserMapper sysUserMapper;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
 
-    public SystemSetupService(
-            SysUserMapper sysUserMapper,
-            PasswordEncoder passwordEncoder,
-            AuditLogService auditLogService) {
-        this.sysUserMapper = sysUserMapper;
-        this.passwordEncoder = passwordEncoder;
-        this.auditLogService = auditLogService;
-    }
 
     public SetupStatusVO getSetupStatus() {
         long count = sysUserMapper.selectCount(new LambdaQueryWrapper<>());

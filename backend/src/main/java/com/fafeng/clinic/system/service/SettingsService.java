@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.system.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -13,16 +14,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class SettingsService {
 
     private final SysSettingMapper sysSettingMapper;
     private final AuditLogService auditLogService;
 
-    public SettingsService(SysSettingMapper sysSettingMapper, AuditLogService auditLogService) {
-        this.sysSettingMapper = sysSettingMapper;
-        this.auditLogService = auditLogService;
-    }
 
     public List<SettingVO> listAll() {
         return sysSettingMapper.selectList(new LambdaQueryWrapper<SysSetting>()

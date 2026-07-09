@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.inventory.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -49,7 +50,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 库存业务核心：入库、出库、盘点、流水与预警。
+ * <p>所有数量变更必须写入 {@code inventory_flow}；出库按 FEFO 推荐批次，须用户确认后才扣减；
+ * 库存不足时抛出业务异常阻止出库。</p>
+ */
 @Service
+@RequiredArgsConstructor
 public class InventoryService {
 
     private static final int EXPIRING_MONTHS = 3;
@@ -63,21 +72,6 @@ public class InventoryService {
     private final PatientService patientService;
     private final AuditLogService auditLogService;
 
-    public InventoryService(InventoryBatchMapper batchMapper,
-                            InventoryFlowMapper flowMapper,
-                            MedicineMapper medicineMapper,
-                            MedicineUnitConversionMapper conversionMapper,
-                            PrescriptionMapper prescriptionMapper,
-                            PatientService patientService,
-                            AuditLogService auditLogService) {
-        this.batchMapper = batchMapper;
-        this.flowMapper = flowMapper;
-        this.medicineMapper = medicineMapper;
-        this.conversionMapper = conversionMapper;
-        this.prescriptionMapper = prescriptionMapper;
-        this.patientService = patientService;
-        this.auditLogService = auditLogService;
-    }
 
     @Transactional
     public FlowVO inbound(InboundRequest request) {

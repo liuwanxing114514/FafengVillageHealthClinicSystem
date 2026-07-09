@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.clinic.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -30,7 +31,14 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 处方 CRUD、打印数据与待出库草稿生成。
+ * <p>生成出库草稿时仅写入 {@code ai_draft}，不直接扣减库存。</p>
+ */
 @Service
+@RequiredArgsConstructor
 public class PrescriptionService {
 
     private static final String CLINIC_NAME = "发凤村卫生室";
@@ -45,23 +53,6 @@ public class PrescriptionService {
     private final QuickPhraseService quickPhraseService;
     private final PrescriptionPrintTemplateService printTemplateService;
 
-    public PrescriptionService(PrescriptionMapper prescriptionMapper,
-                               PrescriptionItemMapper prescriptionItemMapper,
-                               ClinicVisitMapper visitMapper,
-                               PatientService patientService,
-                               MedicineService medicineService,
-                               AuditLogService auditLogService,
-                               QuickPhraseService quickPhraseService,
-                               PrescriptionPrintTemplateService printTemplateService) {
-        this.prescriptionMapper = prescriptionMapper;
-        this.prescriptionItemMapper = prescriptionItemMapper;
-        this.visitMapper = visitMapper;
-        this.patientService = patientService;
-        this.medicineService = medicineService;
-        this.auditLogService = auditLogService;
-        this.quickPhraseService = quickPhraseService;
-        this.printTemplateService = printTemplateService;
-    }
 
     @Transactional
     public PrescriptionDetailVO create(SavePrescriptionRequest request) {
