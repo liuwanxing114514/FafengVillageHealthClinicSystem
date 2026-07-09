@@ -31,6 +31,8 @@
 | 第四期：业务扩展 | v1.5 | 批量出库 | 5.3.3 |
 | | v1.6 | 处方模板与就诊收费 | 5.8、5.9 |
 | 第五期：AI Agent | v2.0 | 自然语言查询 | 5.16 |
+| | v2.0.1 | 工程化（Lombok + API 文档） | — |
+| | v2.1.2 | AI 层 Spring AI 化 | — |
 | | v2.1 | 流程自动化 | 5.17 |
 | 第六期：RAG 知识库 | v2.2 | 脱敏病历向量化 | 5.14 |
 | | v2.3 | 相似病例检索 | 5.15 |
@@ -500,9 +502,95 @@
 
 ---
 
+### v2.0.1 工程化（Lombok + API 文档 + 注释）
+
+**前置依赖**：v2.0
+
+**目标**：全库统一工程规范，**不改变业务行为**；便于开发与调试。
+
+**交付**：
+
+**Lombok（全库统一）**
+
+- 根 `pom.xml` 引入 Lombok；`lombok.config` 统一配置。
+- **Entity / Model**（MyBatis、Jackson 草稿类）：`@Data` + `@NoArgsConstructor`（替代手写 get/set）。
+- **Service / Component**：`@RequiredArgsConstructor`（替代手写构造器）。
+- **DTO / VO**：继续用 Java `record`（已是简洁形态，不强行改 Lombok）。
+
+**springdoc OpenAPI（仅 dev 生效）**
+
+- 依赖 `springdoc-openapi-starter-webmvc-ui`（Spring Boot 3 用 springdoc，不用旧版 springfox）。
+- `application-dev.yml`：`springdoc.swagger-ui.enabled=true`；`prod` / `docker` profile **完全禁用** API 文档与 Swagger UI。
+- `SecurityConfig`：仅 dev profile 放行 `/swagger-ui/**`、`/v3/api-docs/**`。
+- 全局 `OpenAPI` Bean；主要 Controller 加 `@Tag` / `@Operation`（至少 AI、Agent、库存、处方模块）。
+
+**注释**
+
+- 各业务包 `package-info.java` 补模块说明。
+- Controller、核心 Service、AI/Agent 编排类：类级 JavaDoc（业务规则、草稿门禁、禁止直接改库存等）。
+- 不对每个 getter 或 trivial 方法写注释。
+
+**不做**：
+
+- 不改 API 路径与响应结构（除非文档注解所需）。
+- 不顺带做 v2.1 业务或 Spring AI 迁移（属 v2.1.2）。
+
+**验收**：
+
+- `mvn test` 全部通过；`npm run build` 通过。
+- prod/docker 构建产物中 swagger 不可访问。
+- Entity 样板代码显著减少。
+
+---
+
+### v2.1.2 AI 层 Spring AI 化
+
+**前置依赖**：v2.0.1（建议）、v2.0、v1.3
+
+**目标**：用 **Spring AI** 替换自研 `HttpDeepSeekClient` + JSON 工具计划编排，**不造 HTTP/Agent 轮子**；诊所业务规则不变。
+
+**交付**：
+
+**依赖与配置**
+
+- `spring-ai-starter-model-openai`（DeepSeek 走 OpenAI 兼容 `base-url` + `api-key`）。
+- `.env.example` / `application.yml` 映射现有 `DEEPSEEK_*`、`CLINIC_AI_ENABLED`；`enabled=false` 时行为与现 noop 一致。
+
+**替换范围**
+
+| 现实现 | Spring AI |
+| --- | --- |
+| `HttpDeepSeekClient` / `DeepSeekAiProvider` | `ChatClient` + 条件 Bean |
+| `AiVisitStructureService` / `AiInboundOcrService` 中的 `chatCompletion` | `ChatClient` 调用 |
+| `AgentOrchestrator` + JSON 工具计划 | `@Tool` + `ToolCallback` / `ChatClient.tools()` |
+| 6 个 Agent 工具业务逻辑 | 保留，仅改注册与调用方式 |
+
+**必须保留（不自研替代）**
+
+- `Desensitizer`：实现为 Spring AI `Advisor` 或调用前拦截。
+- `ai_draft` 草稿门禁；`generateOutboundDraft` 仍只写草稿。
+- Whisper / OCR 独立 HTTP 客户端（不在本版改）。
+
+**测试与文档**
+
+- 更新 `AiVisitStructureServiceTest`、`AgentControllerTest` 等（mock `ChatClient` 或测试替身）。
+- 更新 `docs/给Agent/AI架构.md` §2、§6。
+
+**不做**：
+
+- 不改为微服务；不顺带 Lombok（属 v2.0.1）。
+- v2.1 处方→出库业务（属 v2.1）。
+
+**验收**：
+
+- AI 关闭时基础业务无报错；Agent 查询与出库草稿行为与 v2.0 一致。
+- `mvn test` 全部通过。
+
+---
+
 ### v2.1 流程自动化
 
-**前置依赖**：v2.0、v0.5、v0.6
+**前置依赖**：v2.1.2（建议）、v2.0、v0.5、v0.6
 
 **目标**：
 
