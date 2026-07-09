@@ -3,11 +3,27 @@
 > 面向基层诊所的全栈管理系统：药品库存、患者病历、处方打印，可选 AI（结构化整理、OCR 入库、Agent 工具调用、RAG 相似病例）。  
 > 源自真实村卫生室场景，**v3.0 已可用于生产部署**（Docker Compose / 群晖 NAS）。
 
+**仓库地址**：https://github.com/liuwanxing114514/FafengVillageHealthClinicSystem
+
 [![Java 21](https://img.shields.io/badge/Java-21-blue)](backend/)
 [![Spring Boot 3.4](https://img.shields.io/badge/Spring%20Boot-3.4-green)](backend/)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883)](frontend/)
 [![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-336791)](docker-compose.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+---
+
+## 关于本项目
+
+本项目由作者独立发起，**大量代码与文档在 [Cursor](https://cursor.com) AI 辅助下完成**（Agent 对话编程 + 版本化 Prompt + 规则约束），作者负责需求定义、架构决策、业务验收与生产部署。
+
+| 部分 | 说明 |
+| --- | --- |
+| **作者主导** | 业务规则、ROADMAP 版本划分、真实诊所场景、NAS 部署与回归测试 |
+| **Cursor 辅助** | 后端/前端实现、Flyway 迁移、单元测试、Docker 与脚本草稿、文档整理 |
+| **工程约束** | `docs/给Agent/` 内开发交接、AI 架构与版本任务指南，保证 AI 输出符合项目规范 |
+
+若你对「AI 辅助全栈开发」感兴趣，可结合 [`docs/共用/ROADMAP.md`](docs/共用/ROADMAP.md) 与各版本分支，查看从 v0.1 骨架到 v3.0 的渐进式演进；Cursor 开发入口见 [`docs/给Agent/README.md`](docs/给Agent/README.md)。
 
 ---
 
@@ -17,6 +33,7 @@
 | --- | --- |
 | **真实落地** | 为发凤村卫生室定制，覆盖日常进销存、病历、处方全流程 |
 | **渐进式架构** | v0.1 骨架 → v1.0 无 AI 可用 → v2.x 叠加 Agent / RAG，共 20+ 版本分支可学习 |
+| **AI 辅助开发** | Cursor Agent 按 ROADMAP 分版本迭代，文档与规则驱动，非一次性生成 |
 | **模块化单体** | 单 Spring Boot + 单 Vue SPA，按 domain 分包，非微服务但边界清晰 |
 | **AI 可拔插** | 关闭 API Key 即退化为稳定 MVP；开启后支持 Spring AI Agent、pgvector RAG |
 | **隐私设计** | 调用外部 AI 前自动脱敏姓名、手机、身份证、门牌（库内仍存原文） |
@@ -56,8 +73,8 @@
 **前置**：Docker Desktop 或 Linux Docker，Git。
 
 ```bash
-git clone <你的仓库地址>
-cd 发凤村卫生室
+git clone https://github.com/liuwanxing114514/FafengVillageHealthClinicSystem.git
+cd FafengVillageHealthClinicSystem
 
 cp .env.example .env
 # 编辑 .env：至少修改 POSTGRES_PASSWORD；CLINIC_DATA_DIR 默认 ./clinic-data
