@@ -24,7 +24,7 @@
 | 聊天补全 | `AiProvider.chatCompletion` → `AiChatClient` → `ChatClient` | v1.3 / v2.0.2 |
 | 结构化 JSON 抽取 | 同上（提示词约束 JSON 输出） | v1.3 |
 | Agent 工具调用 | `@Tool` + `ClinicAgentTools` + `ChatClient.tools()` | v2.0.2 |
-| 文本向量化 | 待 v2.2 | v2.2 |
+| 文本向量化 | `VisitEmbeddingService` + `OpenAiEmbeddingModel` | v2.2 |
 
 实现类：
 
@@ -34,6 +34,8 @@
 | `DeepSeekAiProvider` | v1.3 / v2.0.2 | 委托 `SpringAiChatClient` |
 | `LocalAiProvider` | 远期 | Ollama / 本地模型 |
 | `UnconfiguredAiChatClient` | v2.0.2 | AI 未启用时的占位 |
+| `VisitEmbeddingService` | v2.2 | 脱敏拼接 → Embedding → `visit_embedding` |
+| `EmbeddingConfiguration` | v2.2 | 条件装配 `OpenAiEmbeddingModel`（openai/local） |
 
 ---
 
@@ -110,7 +112,8 @@
 | DeepSeek API | v1.3 / v2.0.2 | Spring AI `ChatClient`（OpenAI 兼容），无独立容器 |
 | Whisper | v1.1 | `whisper-service` 容器 |
 | PaddleOCR | v1.4 | `ocr-service` 容器 |
-| pgvector | v2.2 | PostgreSQL 扩展 |
+| pgvector | v2.2 | PostgreSQL 扩展 + `visit_embedding` 表 |
+| 硅基流动 Embedding | v2.2 | `BAAI/bge-m3`，OpenAI 兼容 `/v1/embeddings` |
 
 ---
 
@@ -143,6 +146,9 @@ Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → Spring AI `Chat
 - `GET /api/agent/logs` — 执行日志（`agent_execution_log` 表）
 - `POST /api/prescriptions/{id}/outbound-draft` — 处方生成 OUTBOUND 草稿（v2.1）
 - `POST /api/ai/drafts/{id}/approve-outbound` — 医生确认批次后批量出库（v2.1）
+- `GET /api/ai/embeddings/status` — 向量化状态（v2.2）
+- `POST /api/ai/embeddings/sync-full` — 全量向量化同步（v2.2）
+- `POST /api/ai/embeddings/sync-incremental` — 增量向量化同步（v2.2）
 
 ### 6.4 前端
 
@@ -154,16 +160,34 @@ Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → Spring AI `Chat
 
 ## 7. 配置项（.env）
 
+**Chat / Agent**（可用 DeepSeek 官网或硅基流动 OpenAI 兼容地址）：
+
 ```env
 CLINIC_AI_ENABLED=false
 CLINIC_AI_PROVIDER=noop
 DEEPSEEK_API_KEY=
 DEEPSEEK_BASE_URL=https://api.deepseek.com
-CLINIC_WHISPER_URL=
-CLINIC_OCR_URL=
+DEEPSEEK_MODEL=deepseek-chat
 ```
 
-详见 `.env.example`（v1.0 起维护）。
+**统一硅基流动（Chat + Embedding 同 Key，推荐生产与 IDEA 测试）**：
+
+```env
+DEEPSEEK_BASE_URL=https://api.siliconflow.cn/v1
+DEEPSEEK_MODEL=deepseek-ai/DeepSeek-V3
+CLINIC_EMBEDDING_ENABLED=true
+CLINIC_EMBEDDING_PROVIDER=openai
+CLINIC_EMBEDDING_API_KEY=
+CLINIC_EMBEDDING_BASE_URL=https://api.siliconflow.cn/v1
+CLINIC_EMBEDDING_MODEL=BAAI/bge-m3
+CLINIC_EMBEDDING_DIMENSIONS=1024
+```
+
+**IDEA dev**：Spring Boot 不自动读 `.env`；Run Configuration 需 EnvFile 或手动环境变量。数据库见 `application-dev.yml`。
+
+**向量化**：`CLINIC_EMBEDDING_ENABLED=false` 时不影响基础业务；BGE 模型勿传 `dimensions` 参数给 API。
+
+详见 [`.env.example`](../../.env.example)。
 
 ---
 
@@ -180,4 +204,4 @@ CLINIC_OCR_URL=
 | v2.0 | Agent 6 工具、AgentOrchestrator、agent_execution_log、AI 助手页 |
 | v2.0.2 | Spring AI：ChatClient 替换 HttpDeepSeekClient；@Tool 替换 JSON 编排；DesensitizationAdvisor |
 | v2.1 | 处方→出库→打印：`approveOutbound`、处方页生成 OUTBOUND 草稿、`OutboundDraftView` 确认出库 |
-| v2.2 | 待填：向量化 pipeline |
+| v2.2 | `visit_embedding`、脱敏向量化、`VisitEmbeddingService`、硅基流动/本地 Embedding API |

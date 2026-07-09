@@ -150,7 +150,7 @@ docker compose logs backend | Select-String -Pattern "Flyway"
 | **v1.6** | Flyway V11（病历收费字段、打印模板配置）；需纸质处方样本 | — |
 | **v2.0** | 依赖 v1.3；实装 AI 助手页 | 关闭 AI 时不影响 |
 | **v2.1** | 仅程序更新 | — |
-| **v2.2** | 直接建 visit_embedding 表（扩展 v0.1 已装） | 是，不影响 |
+| **v2.2** | Flyway V13 `visit_embedding`；`.env` 增 Embedding 项；硅基流动 `BAAI/bge-m3` | 关闭 Embedding 时不影响 |
 | **v2.3** | 仅程序更新 | — |
 
 ### .env 合并示例
@@ -163,6 +163,11 @@ CLINIC_OCR_URL=http://ocr-service:8080
 DEEPSEEK_API_KEY=
 CLINIC_AI_ENABLED=false
 CLINIC_AI_PROVIDER=noop
+CLINIC_EMBEDDING_ENABLED=false
+CLINIC_EMBEDDING_API_KEY=
+CLINIC_EMBEDDING_BASE_URL=https://api.siliconflow.cn/v1
+CLINIC_EMBEDDING_MODEL=BAAI/bge-m3
+CLINIC_EMBEDDING_DIMENSIONS=1024
 ```
 
 将缺失项追加到现有 `.env`，**不要直接覆盖整个 .env**（会丢失已设置的密码和路径）。
