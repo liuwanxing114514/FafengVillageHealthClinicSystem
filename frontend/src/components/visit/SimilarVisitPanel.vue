@@ -189,4 +189,11 @@ onBeforeUnmount(() => {
   line-height: 1.5;
   color: #303133;
 }
+
+@media (max-width: 768px) {
+  .similar-panel {
+    width: 100%;
+    position: static;
+  }
+}
 </style>

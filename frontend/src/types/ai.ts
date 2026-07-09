@@ -118,3 +118,12 @@ export interface VisitEmbeddingStatus {
   pendingCount: number
   latestSyncedAt: string | null
 }
+
+export interface VisitEmbeddingSyncResult {
+  mode: string
+  total: number
+  synced: number
+  skipped: number
+  failed: number
+  durationMs: number
+}

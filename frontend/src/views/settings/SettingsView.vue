@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { changePassword } from '@/api/auth'
+import {
+  getEmbeddingStatus,
+  syncEmbeddingsFull,
+  syncEmbeddingsIncremental,
+} from '@/api/ai'
 import { fetchSettings, updateSetting } from '@/api/settings'
 import type { SettingItem } from '@/types/api'
+import type { VisitEmbeddingStatus } from '@/types/ai'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -19,11 +25,96 @@ const pwdForm = reactive({
 const clinicName = ref('')
 const printTemplate = ref('default-a4')
 
+const embeddingStatus = ref<VisitEmbeddingStatus | null>(null)
+const embeddingStatusLoading = ref(false)
+const embeddingSyncLoading = ref(false)
+
+const canSyncEmbedding = computed(
+  () => Boolean(embeddingStatus.value?.enabled && embeddingStatus.value?.configured),
+)
+
+const embeddingServiceLabel = computed(() => {
+  if (!embeddingStatus.value) return '加载中…'
+  if (embeddingStatus.value.enabled && embeddingStatus.value.configured) return '已启用'
+  if (!embeddingStatus.value.enabled) return '未启用'
+  return '配置不完整'
+})
+
+const embeddingAlertMessage = computed(() => {
+  if (!embeddingStatus.value) return ''
+  if (!embeddingStatus.value.enabled) {
+    return '病历向量化未启用。请在 .env 中设置 CLINIC_EMBEDDING_ENABLED=true 并配置 API Key。关闭时不影响日常业务。'
+  }
+  if (!embeddingStatus.value.configured) {
+    return 'Embedding 配置不完整，请检查 CLINIC_EMBEDDING_API_KEY 与 CLINIC_EMBEDDING_BASE_URL。'
+  }
+  return ''
+})
+
+function formatSyncedAt(value: string | null | undefined) {
+  if (!value) return '尚未同步'
+  return value.replace('T', ' ').slice(0, 19)
+}
+
+function formatSyncResult(modeLabel: string, result: {
+  synced: number
+  skipped: number
+  failed: number
+  durationMs: number
+}) {
+  const seconds = (result.durationMs / 1000).toFixed(1)
+  return `${modeLabel}完成：成功 ${result.synced} 条，跳过 ${result.skipped} 条，失败 ${result.failed} 条，耗时 ${seconds} 秒`
+}
+
 async function loadSettings() {
   settings.value = await fetchSettings()
   clinicName.value = settings.value.find((s) => s.key === 'clinic_name')?.value ?? ''
   printTemplate.value =
     settings.value.find((s) => s.key === 'prescription_print_active_template')?.value ?? 'default-a4'
+}
+
+async function loadEmbeddingStatus() {
+  embeddingStatusLoading.value = true
+  try {
+    embeddingStatus.value = await getEmbeddingStatus()
+  } catch {
+    embeddingStatus.value = null
+  } finally {
+    embeddingStatusLoading.value = false
+  }
+}
+
+async function onSyncIncremental() {
+  if (!canSyncEmbedding.value || embeddingSyncLoading.value) return
+  embeddingSyncLoading.value = true
+  try {
+    const result = await syncEmbeddingsIncremental()
+    ElMessage.success(formatSyncResult('增量同步', result))
+    await loadEmbeddingStatus()
+  } finally {
+    embeddingSyncLoading.value = false
+  }
+}
+
+async function onSyncFull() {
+  if (!canSyncEmbedding.value || embeddingSyncLoading.value) return
+  try {
+    await ElMessageBox.confirm(
+      '全量同步将重新处理全部有效病历，病历较多时可能耗时数分钟。是否继续？',
+      '全量向量化同步',
+      { type: 'warning', confirmButtonText: '开始同步', cancelButtonText: '取消' },
+    )
+  } catch {
+    return
+  }
+  embeddingSyncLoading.value = true
+  try {
+    const result = await syncEmbeddingsFull()
+    ElMessage.success(formatSyncResult('全量同步', result))
+    await loadEmbeddingStatus()
+  } finally {
+    embeddingSyncLoading.value = false
+  }
 }
 
 async function onSavePrintTemplate() {
@@ -71,7 +162,10 @@ async function onLogout() {
   await router.replace('/login')
 }
 
-onMounted(loadSettings)
+onMounted(() => {
+  void loadSettings()
+  void loadEmbeddingStatus()
+})
 </script>
 
 <template>
@@ -126,6 +220,75 @@ onMounted(loadSettings)
 
       <el-divider />
 
+      <h3 class="section">病历向量化</h3>
+      <p class="hint">管理历史病历脱敏向量，供相似病例参考。首次启用 RAG 后请执行一次全量同步。</p>
+
+      <el-alert
+        v-if="embeddingAlertMessage"
+        type="info"
+        :closable="false"
+        show-icon
+        class="embedding-alert"
+        :title="embeddingAlertMessage"
+      />
+
+      <div v-loading="embeddingStatusLoading" class="embedding-panel">
+        <el-descriptions v-if="embeddingStatus" :column="1" border size="small" class="embedding-desc">
+          <el-descriptions-item label="服务状态">
+            <el-tag
+              :type="embeddingStatus.enabled && embeddingStatus.configured ? 'success' : 'info'"
+              size="small"
+            >
+              {{ embeddingServiceLabel }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="模型">
+            {{ embeddingStatus.provider }} / {{ embeddingStatus.model }}（{{ embeddingStatus.dimensions }} 维）
+          </el-descriptions-item>
+          <el-descriptions-item label="有效病历">{{ embeddingStatus.activeVisitCount }}</el-descriptions-item>
+          <el-descriptions-item label="已同步">{{ embeddingStatus.syncedCount }}</el-descriptions-item>
+          <el-descriptions-item label="待同步">
+            <span :class="{ 'pending-warn': embeddingStatus.pendingCount > 0 }">
+              {{ embeddingStatus.pendingCount }}
+            </span>
+          </el-descriptions-item>
+          <el-descriptions-item label="最近同步">
+            {{ formatSyncedAt(embeddingStatus.latestSyncedAt) }}
+          </el-descriptions-item>
+        </el-descriptions>
+        <p v-else-if="!embeddingStatusLoading" class="hint">暂时无法读取向量化状态，请稍后重试。</p>
+
+        <div class="embedding-actions">
+          <el-button
+            :loading="embeddingStatusLoading"
+            :disabled="embeddingSyncLoading"
+            @click="loadEmbeddingStatus"
+          >
+            刷新状态
+          </el-button>
+          <el-button
+            type="primary"
+            plain
+            :loading="embeddingSyncLoading"
+            :disabled="!canSyncEmbedding || embeddingStatusLoading"
+            @click="onSyncIncremental"
+          >
+            增量同步
+          </el-button>
+          <el-button
+            type="warning"
+            plain
+            :loading="embeddingSyncLoading"
+            :disabled="!canSyncEmbedding || embeddingStatusLoading"
+            @click="onSyncFull"
+          >
+            全量同步
+          </el-button>
+        </div>
+      </div>
+
+      <el-divider />
+
       <h3 class="section">快捷语</h3>
       <p class="hint">管理病历录入常用文本，也可在录入页点击候选语快速填入。</p>
       <el-button type="primary" plain @click="router.push('/settings/quick-phrases')">
@@ -151,12 +314,6 @@ onMounted(loadSettings)
   width: min(560px, 100%);
 }
 
-.header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .title {
   font-size: 1.25rem;
   font-weight: 600;
@@ -172,5 +329,43 @@ onMounted(loadSettings)
   margin: 0 0 12px;
   color: #909399;
   font-size: 14px;
+}
+
+.embedding-alert {
+  margin-bottom: 12px;
+}
+
+.embedding-panel {
+  min-height: 80px;
+}
+
+.embedding-desc {
+  margin-bottom: 12px;
+}
+
+.pending-warn {
+  color: #e6a23c;
+  font-weight: 600;
+}
+
+.embedding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 12px;
+  }
+
+  .embedding-actions {
+    flex-direction: column;
+  }
+
+  .embedding-actions :deep(.el-button) {
+    width: 100%;
+    margin-left: 0;
+  }
 }
 </style>

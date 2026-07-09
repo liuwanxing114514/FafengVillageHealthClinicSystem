@@ -555,4 +555,24 @@ onMounted(async () => {
 .field-stack {
   width: 100%;
 }
+
+@media (max-width: 768px) {
+  .page {
+    padding: 12px;
+  }
+
+  .page-layout {
+    flex-direction: column;
+  }
+
+  .header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
+}
 </style>

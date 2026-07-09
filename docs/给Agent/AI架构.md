@@ -158,6 +158,7 @@ Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → Spring AI `Chat
 - `OutboundDraftView`：核对 OUTBOUND 草稿、FEFO 批次、确认出库后跳转处方打印（v2.1）
 - `PrescriptionFormView`：保存处方后「生成待出库清单」→ 跳转出库草稿页（v2.1）
 - `VisitFormView`：病历录入页侧边相似病例 Top-3（v2.3，仅供参考）
+- `SettingsView`：病历向量化状态与全量/增量同步（v2.4）
 
 ### 6.5 相似病例检索（v2.3）
 

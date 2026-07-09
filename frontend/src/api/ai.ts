@@ -12,6 +12,7 @@ import type {
   SimilarVisitSearchResult,
   VisitDraftPayload,
   VisitEmbeddingStatus,
+  VisitEmbeddingSyncResult,
   VoiceStatus,
   VoiceTranscription,
 } from '@/types/ai'
@@ -120,6 +121,32 @@ export function stringifyVisitPayload(payload: VisitDraftPayload): string {
 
 export async function getEmbeddingStatus(): Promise<VisitEmbeddingStatus> {
   return getData<VisitEmbeddingStatus>('/ai/embeddings/status')
+}
+
+const EMBEDDING_SYNC_TIMEOUT_MS = 600_000
+
+export async function syncEmbeddingsFull(): Promise<VisitEmbeddingSyncResult> {
+  const { data } = await http.post<{ code: number; data: VisitEmbeddingSyncResult; message?: string }>(
+    '/ai/embeddings/sync-full',
+    {},
+    { timeout: EMBEDDING_SYNC_TIMEOUT_MS },
+  )
+  if (data.code !== 0) {
+    throw data
+  }
+  return data.data
+}
+
+export async function syncEmbeddingsIncremental(): Promise<VisitEmbeddingSyncResult> {
+  const { data } = await http.post<{ code: number; data: VisitEmbeddingSyncResult; message?: string }>(
+    '/ai/embeddings/sync-incremental',
+    {},
+    { timeout: EMBEDDING_SYNC_TIMEOUT_MS },
+  )
+  if (data.code !== 0) {
+    throw data
+  }
+  return data.data
 }
 
 export async function searchSimilarVisits(payload: {
