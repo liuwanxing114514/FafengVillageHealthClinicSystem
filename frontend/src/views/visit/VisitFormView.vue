@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPatient } from '@/api/patient'
 import { createVisit, deleteVisit, getVisit, updateVisit } from '@/api/visit'
-import { getVoiceStatus } from '@/api/ai'
+import { getVoiceStatus, getAiStatus, structureVisit } from '@/api/ai'
 import VoiceInputButton from '@/components/visit/VoiceInputButton.vue'
 import QuickPhraseChips from '@/components/visit/QuickPhraseChips.vue'
 import { useTabTitle } from '@/composables/useTabTitle'
@@ -15,6 +15,8 @@ const loading = ref(false)
 const saving = ref(false)
 const patientName = ref('')
 const voiceAvailable = ref(false)
+const aiAvailable = ref(false)
+const structuring = ref(false)
 
 const isNew = computed(() => route.params.id === 'new')
 const visitId = computed(() => (isNew.value ? null : Number(route.params.id)))
@@ -139,13 +141,6 @@ async function onSave() {
   }
 }
 
-function goAiStructure() {
-  const query: Record<string, string> = {}
-  if (form.patientId) query.patientId = String(form.patientId)
-  if (visitId.value) query.visitId = String(visitId.value)
-  router.push({ path: '/ai', query })
-}
-
 function goBack() {
   if (form.patientId) {
     router.push(`/patient/${form.patientId}`)
@@ -175,13 +170,37 @@ async function onDelete() {
   }
 }
 
+async function onAiStructure() {
+  const text = [form.chiefComplaint, form.presentIllness, form.pastHistory, form.diagnosis, form.treatment, form.remark]
+    .filter((v) => v && v.trim())
+    .join('\n')
+  if (!text.trim()) {
+    ElMessage.warning('请先输入或语音录入一些内容')
+    return
+  }
+  if (!patientId.value) {
+    ElMessage.warning('缺少患者信息')
+    return
+  }
+  structuring.value = true
+  try {
+    const draft = await structureVisit(text, patientId.value)
+    ElMessage.success('AI 整理完成，请确认草稿')
+    router.push({ name: 'visit-draft', params: { id: draft.id }, query: { patientId: patientId.value } })
+  } finally {
+    structuring.value = false
+  }
+}
+
 onMounted(async () => {
   await loadVisit()
   try {
-    const status = await getVoiceStatus()
-    voiceAvailable.value = status.available
+    const [voiceStatus, aiStatus] = await Promise.all([getVoiceStatus(), getAiStatus()])
+    voiceAvailable.value = voiceStatus.available
+    aiAvailable.value = aiStatus.enabled && aiStatus.providerAvailable
   } catch {
     voiceAvailable.value = false
+    aiAvailable.value = false
   }
 })
 </script>
@@ -193,9 +212,9 @@ onMounted(async () => {
         <div class="header-row">
           <span class="title">{{ isNew ? '新建病历' : '病历详情' }}</span>
           <div class="actions">
-            <el-button @click="goAiStructure">AI 整理</el-button>
             <el-button @click="goBack">返回患者</el-button>
             <el-button v-if="!isNew" @click="goPrescription">开处方</el-button>
+            <el-button v-if="aiAvailable" :loading="structuring" @click="onAiStructure">AI 整理</el-button>
             <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
           </div>
         </div>

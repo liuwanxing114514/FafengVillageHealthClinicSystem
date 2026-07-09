@@ -1,10 +1,22 @@
-import { getData, patchData, postData, putData } from '@/api/http'
+import { getData, postData, putData } from '@/api/http'
 import http from '@/api/http'
-import type { AiDraft, AiStatus, VoiceStatus, VoiceTranscription, VisitDraftPayload } from '@/types/ai'
-import type { VisitDetail } from '@/types/visit'
+import type {
+  AiDraft,
+  AiStatus,
+  ApproveInboundResult,
+  InboundDraftPayload,
+  OcrStatus,
+  VisitDraftPayload,
+  VoiceStatus,
+  VoiceTranscription,
+} from '@/types/ai'
 
 export async function getAiStatus(): Promise<AiStatus> {
   return getData<AiStatus>('/ai/status')
+}
+
+export async function getOcrStatus(): Promise<OcrStatus> {
+  return getData<OcrStatus>('/ai/ocr/status')
 }
 
 export async function getVoiceStatus(): Promise<VoiceStatus> {
@@ -25,7 +37,7 @@ export async function transcribeVoice(blob: Blob): Promise<string> {
   return data.data.text
 }
 
-export function fetchAiDrafts(draftType?: string, status?: string) {
+export async function listAiDrafts(draftType?: string, status?: string): Promise<AiDraft[]> {
   const params = new URLSearchParams()
   if (draftType) params.set('draftType', draftType)
   if (status) params.set('status', status)
@@ -33,28 +45,59 @@ export function fetchAiDrafts(draftType?: string, status?: string) {
   return getData<AiDraft[]>(`/ai/drafts${query ? `?${query}` : ''}`)
 }
 
-export function fetchAiDraft(id: number) {
+export async function getAiDraft(id: number): Promise<AiDraft> {
   return getData<AiDraft>(`/ai/drafts/${id}`)
 }
 
-export function structureVisitDraft(text: string, patientId?: number, visitId?: number) {
-  return postData<AiDraft>('/ai/structure/visit', {
-    text,
-    patientId: patientId ?? null,
-    visitId: visitId ?? null,
+export async function updateAiDraftPayload(id: number, payload: string): Promise<AiDraft> {
+  return putData<AiDraft>(`/ai/drafts/${id}/payload`, { payload })
+}
+
+export async function rejectAiDraft(id: number): Promise<AiDraft> {
+  return http.patch<{ code: number; data: AiDraft }>(`/ai/drafts/${id}`, { status: 'REJECTED' }).then((r) => {
+    if (r.data.code !== 0) throw r.data
+    return r.data.data
   })
 }
 
-export function updateVisitDraftPayload(id: number, payload: VisitDraftPayload) {
-  return putData<AiDraft>(`/ai/drafts/${id}/payload`, {
-    payload: JSON.stringify(payload),
-  })
+export async function ocrInbound(file: File): Promise<AiDraft> {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await http.post<{ code: number; data: AiDraft; message?: string }>(
+    '/ai/ocr/inbound',
+    form,
+    { timeout: 180000 },
+  )
+  if (data.code !== 0) {
+    throw data
+  }
+  return data.data
 }
 
-export function approveVisitDraft(id: number) {
-  return postData<VisitDetail>(`/ai/drafts/${id}/approve-visit`)
+export async function structureVisit(text: string, patientId?: number): Promise<AiDraft> {
+  return postData<AiDraft>('/ai/structure/visit', { text, patientId })
 }
 
-export function rejectAiDraft(id: number) {
-  return patchData<AiDraft>(`/ai/drafts/${id}`, { status: 'REJECTED' })
+export async function approveInboundDraft(id: number): Promise<ApproveInboundResult> {
+  return postData<ApproveInboundResult>(`/ai/drafts/${id}/approve-inbound`, {})
+}
+
+export async function approveVisitDraft(id: number, patientId: number): Promise<{ id: number }> {
+  return postData<{ id: number }>(`/ai/drafts/${id}/approve-visit`, { patientId })
+}
+
+export function parseInboundPayload(payload: string): InboundDraftPayload {
+  return JSON.parse(payload) as InboundDraftPayload
+}
+
+export function parseVisitPayload(payload: string): VisitDraftPayload {
+  return JSON.parse(payload) as VisitDraftPayload
+}
+
+export function stringifyInboundPayload(payload: InboundDraftPayload): string {
+  return JSON.stringify(payload)
+}
+
+export function stringifyVisitPayload(payload: VisitDraftPayload): string {
+  return JSON.stringify(payload)
 }

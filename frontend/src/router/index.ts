@@ -17,10 +17,12 @@ import PrescriptionFormView from '@/views/prescription/PrescriptionFormView.vue'
 import PrescriptionPrintView from '@/views/prescription/PrescriptionPrintView.vue'
 import InboundView from '@/views/inventory/InboundView.vue'
 import OutboundView from '@/views/inventory/OutboundView.vue'
+import BatchOutboundView from '@/views/inventory/BatchOutboundView.vue'
 import FlowListView from '@/views/inventory/FlowListView.vue'
 import AlertListView from '@/views/inventory/AlertListView.vue'
 import AiAssistantView from '@/views/ai/AiAssistantView.vue'
-import AiDraftDetailView from '@/views/ai/AiDraftDetailView.vue'
+import InboundDraftView from '@/views/ai/InboundDraftView.vue'
+import VisitDraftView from '@/views/ai/VisitDraftView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -121,16 +123,28 @@ const router = createRouter({
           meta: { title: 'AI 助手' },
         },
         {
-          path: 'ai/drafts/:id',
-          name: 'ai-draft-detail',
-          component: AiDraftDetailView,
-          meta: { title: 'AI 草稿' },
+          path: 'ai/drafts/inbound/:id',
+          name: 'inbound-draft',
+          component: InboundDraftView,
+          meta: { title: 'OCR 入库草稿' },
+        },
+        {
+          path: 'ai/drafts/visit/:id',
+          name: 'visit-draft',
+          component: VisitDraftView,
+          meta: { title: '病历草稿' },
         },
         {
           path: 'inventory/inbound',
           name: 'inventory-inbound',
           component: InboundView,
           meta: { title: '入库' },
+        },
+        {
+          path: 'inventory/outbound/batch',
+          name: 'inventory-batch-outbound',
+          component: BatchOutboundView,
+          meta: { title: '批量出库' },
         },
         {
           path: 'inventory/outbound',

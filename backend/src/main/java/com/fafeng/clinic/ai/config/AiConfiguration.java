@@ -12,7 +12,7 @@ import java.util.Locale;
 import java.util.Map;
 
 @Configuration
-@EnableConfigurationProperties({ClinicAiProperties.class, ClinicVoiceProperties.class})
+@EnableConfigurationProperties({ClinicAiProperties.class, ClinicVoiceProperties.class, ClinicOcrProperties.class})
 public class AiConfiguration {
 
     @Bean

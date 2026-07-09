@@ -4,6 +4,11 @@ export interface AiStatus {
   providerAvailable: boolean
 }
 
+export interface OcrStatus {
+  configured: boolean
+  available: boolean
+}
+
 export interface VoiceStatus {
   configured: boolean
   available: boolean
@@ -23,15 +28,38 @@ export interface AiDraft {
   updatedAt: string
 }
 
+export interface InboundDraftLine {
+  medicineId?: number | null
+  medicineName?: string
+  specification?: string
+  quantity?: string
+  unit?: string
+  batchNo?: string
+  expiryDate?: string
+  purchasePrice?: string
+  matchNote?: string
+}
+
+export interface InboundDraftPayload {
+  supplier?: string
+  remark?: string
+  imagePath?: string
+  ocrText?: string
+  lines: InboundDraftLine[]
+}
+
 export interface VisitDraftPayload {
-  patientId: number | null
-  visitId: number | null
-  inputText: string
-  chiefComplaint: string | null
-  presentIllness: string | null
-  pastHistory: string | null
-  allergyHistory: string | null
-  diagnosis: string | null
-  treatment: string | null
-  remark: string | null
+  patientId?: number | null
+  sourceText?: string
+  chiefComplaint?: string
+  presentIllness?: string
+  pastHistory?: string
+  diagnosis?: string
+  treatment?: string
+  remark?: string
+}
+
+export interface ApproveInboundResult {
+  successCount: number
+  totalCount: number
 }

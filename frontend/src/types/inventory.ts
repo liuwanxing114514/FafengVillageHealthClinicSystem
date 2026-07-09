@@ -110,6 +110,28 @@ export interface OutboundConfirmPayload {
   allocations: Array<{ batchId: number; quantity: number }>
 }
 
+export interface BatchOutboundPreviewPayload {
+  items: Array<{ medicineId: number; quantity: number; unit: string }>
+}
+
+export interface BatchOutboundConfirmLinePayload {
+  medicineId: number
+  quantity: number
+  unit: string
+  allocations: Array<{ batchId: number; quantity: number }>
+}
+
+export interface BatchOutboundConfirmPayload {
+  reason: string
+  lines: BatchOutboundConfirmLinePayload[]
+}
+
+export interface BatchOutboundResult {
+  lineCount: number
+  flowCount: number
+  flows: FlowItem[]
+}
+
 export interface AdjustPayload {
   medicineId: number
   batchId: number

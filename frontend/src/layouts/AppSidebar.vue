@@ -10,6 +10,7 @@ import {
   Expand,
   HomeFilled,
   List,
+  Operation,
   Setting,
   Upload,
   User,
@@ -35,6 +36,7 @@ const iconMap: Record<string, typeof HomeFilled> = {
   Upload,
   List,
   Warning,
+  Operation,
   ChatDotRound,
   Setting,
 }
@@ -44,6 +46,7 @@ const activeMenu = computed(() => {
   if (path.startsWith('/patient')) return '/patient'
   if (path.startsWith('/medicine')) return '/medicine'
   if (path.startsWith('/inventory/inbound')) return '/inventory/inbound'
+  if (path.startsWith('/inventory/outbound/batch')) return '/inventory/outbound/batch'
   if (path.startsWith('/inventory/outbound')) return '/inventory/outbound'
   if (path.startsWith('/inventory/flows')) return '/inventory/flows'
   if (path.startsWith('/inventory/alerts')) return '/inventory/alerts'

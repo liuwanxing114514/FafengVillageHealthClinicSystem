@@ -3,6 +3,9 @@ import type { PageResult } from '@/types/medicine'
 import type {
   AdjustPayload,
   BatchItem,
+  BatchOutboundConfirmPayload,
+  BatchOutboundPreviewPayload,
+  BatchOutboundResult,
   DashboardSummary,
   FlowItem,
   InboundPayload,
@@ -22,6 +25,14 @@ export async function previewOutbound(payload: OutboundPreviewPayload): Promise<
 
 export async function confirmOutbound(payload: OutboundConfirmPayload): Promise<FlowItem[]> {
   return postData<FlowItem[]>('/inventory/outbound', payload)
+}
+
+export async function previewBatchOutbound(payload: BatchOutboundPreviewPayload): Promise<OutboundPreview> {
+  return postData<OutboundPreview>('/inventory/outbound/batch/preview', payload)
+}
+
+export async function confirmBatchOutbound(payload: BatchOutboundConfirmPayload): Promise<BatchOutboundResult> {
+  return postData<BatchOutboundResult>('/inventory/outbound/batch', payload)
 }
 
 export async function adjustInventory(payload: AdjustPayload): Promise<FlowItem> {

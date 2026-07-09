@@ -15,43 +15,25 @@
 
 ---
 
-## 2. AiProvider 接口
+## 2. AiProvider 接口（v0.9 定义）
 
-| 方法 | 说明 |
-| --- | --- |
-| `name()` / `isAvailable()` | Provider 标识与可用性（v0.9） |
-| `DeepSeekAiProvider.chatCompletion()` | 调用 DeepSeek 聊天补全，JSON 模式（v1.3） |
+待 v0.9 实现时补充：
+
+- 聊天补全
+- 结构化 JSON 抽取
+- 文本向量化（v2.2）
 
 实现类：
 
 | 类 | 版本 | 说明 |
 | --- | --- | --- |
-| `NoopAiProvider` | v0.9 | 默认，AI 关闭时使用 |
-| `DeepSeekAiProvider` | v1.3 | DeepSeek API，病历结构化整理 |
+| `NoopAiProvider` | v0.9 | 默认，空实现 |
+| `DeepSeekAiProvider` | v1.3 | DeepSeek API |
 | `LocalAiProvider` | 远期 | Ollama / 本地模型 |
 
-## 3. 病历结构化整理流程（v1.3）
+---
 
-```text
-自由文本 / 语音转写
-  → Desensitizer（出站脱敏，含已知患者字段 + 正则）
-  → DeepSeek（visit-structure 提示词，JSON 输出）
-  → ai_draft（VISIT，PENDING）
-  → 前端草稿核对页逐字段编辑
-  → 医生确认 → VisitService 写入 clinic_visit
-  → ai_draft 标记 APPROVED
-```
-
-API：
-
-- `POST /api/ai/structure/visit` — 生成草稿
-- `PUT /api/ai/drafts/{id}/payload` — 保存核对后的字段
-- `POST /api/ai/drafts/{id}/approve-visit` — 确认写入病历
-- `PATCH /api/ai/drafts/{id}` — 拒绝（`REJECTED`）
-
-提示词：`clinic.ai.visit-structure-prompt`（`application.yml` / `CLINIC_AI_VISIT_PROMPT`），留空用内置默认。
-
-## 4. ai_draft 草稿模型
+## 3. ai_draft 草稿模型（v0.9 定义）
 
 | 字段 | 说明 |
 | --- | --- |
@@ -63,13 +45,13 @@ API：
 
 ---
 
-## 5. 脱敏策略（T1 已确认，v1.3 实装）
+## 4. 脱敏策略（T1 已确认，v1.3 实装）
 
 > 原则：**部分屏蔽 + 星号**，在保护隐私的同时保留 AI 可用的上下文。  
 > 调用 DeepSeek 等**外部 API** 前必须执行；v2.2 本地向量化前同样适用。  
 > 完整规则见本文档第 4 节。
 
-### 5.1 必须脱敏（部分屏蔽）
+### 4.1 必须脱敏（部分屏蔽）
 
 | 字段 | 规则 | 示例 |
 | --- | --- | --- |
@@ -124,7 +106,7 @@ API：
 | DeepSeek API | v1.3 | 后端 HTTP 调用，无独立容器 |
 | Whisper | v1.1 | `whisper-service` 容器 |
 | PaddleOCR | v1.4 | `ocr-service` 容器 |
-| pgvector | v0.1 | PostgreSQL 扩展（`vector`），V0 迁移启用 |
+| pgvector | v2.2 | PostgreSQL 扩展 |
 
 ---
 
@@ -157,7 +139,7 @@ CLINIC_OCR_URL=
 | T1 | 脱敏规则定稿：部分屏蔽（姓/手机首尾/门牌/身份证） |
 | T2–T6 | 出库 FEFO 推荐+手动确认；年龄推算；身份证；库存下限单位 |
 | v0.9 | 待填：AiProvider 接口、ai_draft 表 |
-| v1.1 | Whisper 语音转写：/api/ai/voice/transcribe、uploads/audio、whisper-service 容器 |
-| v1.3 | DeepSeekAiProvider、Desensitizer、VISIT 草稿确认流程 |
+| v1.3 | DeepSeek、Desensitizer、VISIT 草稿确认 |
+| v1.4 | PaddleOCR 容器、OCR 入库 INBOUND 草稿、批准入库 |
 | v2.0 | 待填：Agent 工具列表、execution_log |
 | v2.2 | 待填：向量化 pipeline |
