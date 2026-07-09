@@ -180,7 +180,9 @@ public class AiDraftService {
                 null,
                 payload.getDiagnosis(),
                 payload.getTreatment(),
-                payload.getRemark()
+                payload.getRemark(),
+                null,
+                null
         );
         VisitDetailVO visit = visitService.create(saveRequest);
 

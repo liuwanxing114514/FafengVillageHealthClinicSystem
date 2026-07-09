@@ -26,7 +26,7 @@ class MedicineImportExcelParserTest {
                 MedicineImportExcelParser.TEMPLATE_HEADERS.toArray(String[]::new),
                 {
                         "测试导入药", "通用名", "片剂", "100片", "片", "盒", "24",
-                        "药厂", "6909999888877", "8.5", "120", "B001", "2027-06-01", "48", "备注"
+                        "药厂", "6909999888877", "8.5", "12.0", "120", "B001", "2027-06-01", "48", "备注"
                 }
         });
 
@@ -53,7 +53,7 @@ class MedicineImportExcelParserTest {
                 MedicineImportExcelParser.TEMPLATE_HEADERS.toArray(String[]::new),
                 {
                         "换算测试药", "", "", "", "粒", "盒", "2盒=48粒",
-                        "", "", "1", "", "", "", "0", ""
+                        "", "", "1", "1.5", "", "", "", "0", ""
                 }
         });
 

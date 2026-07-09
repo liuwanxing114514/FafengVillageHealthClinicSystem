@@ -60,11 +60,12 @@ public class MedicineImportExcelParser {
             example.createCell(7).setCellValue("示例药厂");
             example.createCell(8).setCellValue("6901234567890");
             example.createCell(9).setCellValue("12.5");
-            example.createCell(10).setCellValue("120");
-            example.createCell(11).setCellValue("B20260101");
-            example.createCell(12).setCellValue("2027-12-31");
-            example.createCell(13).setCellValue("48");
-            example.createCell(14).setCellValue("示例行，导入前请删除");
+            example.createCell(10).setCellValue("18.0");
+            example.createCell(11).setCellValue("120");
+            example.createCell(12).setCellValue("B20260101");
+            example.createCell(13).setCellValue("2027-12-31");
+            example.createCell(14).setCellValue("48");
+            example.createCell(15).setCellValue("示例行，导入前请删除");
             for (int i = 0; i < TEMPLATE_HEADERS.size(); i++) {
                 sheet.autoSizeColumn(i);
             }
