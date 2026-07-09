@@ -147,6 +147,15 @@ onMounted(loadDetail)
         </div>
       </template>
 
+      <el-alert
+        v-if="!isNew && detail && detail.totalArrears > 0"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="arrears-alert"
+        :title="`该患者累计欠款 ¥${detail.totalArrears.toFixed(2)}，请注意收款`"
+      />
+
       <el-form label-width="96px" class="form-grid">
         <el-form-item label="姓名" required>
           <el-input v-model="form.name" maxlength="64" />
@@ -200,7 +209,13 @@ onMounted(loadDetail)
             <template #default="{ row }">{{ formatDateTime(row.visitTime) }}</template>
           </el-table-column>
           <el-table-column prop="chiefComplaint" label="主诉" min-width="160" show-overflow-tooltip />
-          <el-table-column prop="diagnosis" label="诊断" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="diagnosis" label="诊断" min-width="140" show-overflow-tooltip />
+          <el-table-column label="应收" width="90" align="right">
+            <template #default="{ row }">{{ Number(row.amountDue ?? 0).toFixed(2) }}</template>
+          </el-table-column>
+          <el-table-column label="欠款" width="90" align="right">
+            <template #default="{ row }">{{ Number(row.balance ?? 0).toFixed(2) }}</template>
+          </el-table-column>
           <el-table-column label="操作" width="140">
             <template #default="{ row }">
               <el-button link type="primary" @click="goVisit(row.id)">查看</el-button>
@@ -237,6 +252,10 @@ onMounted(loadDetail)
 
 .form-grid {
   max-width: 720px;
+}
+
+.arrears-alert {
+  margin-bottom: 16px;
 }
 
 .hint {

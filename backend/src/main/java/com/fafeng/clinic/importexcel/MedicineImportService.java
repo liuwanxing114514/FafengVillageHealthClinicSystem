@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.importexcel;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -30,7 +31,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class MedicineImportService {
 
     private final MedicineImportExcelParser parser;
@@ -40,19 +44,6 @@ public class MedicineImportService {
     private final MedicineMapper medicineMapper;
     private final MedicineBarcodeMapper barcodeMapper;
 
-    public MedicineImportService(MedicineImportExcelParser parser,
-                                 MedicineImportPreviewCache previewCache,
-                                 MedicineService medicineService,
-                                 InventoryService inventoryService,
-                                 MedicineMapper medicineMapper,
-                                 MedicineBarcodeMapper barcodeMapper) {
-        this.parser = parser;
-        this.previewCache = previewCache;
-        this.medicineService = medicineService;
-        this.inventoryService = inventoryService;
-        this.medicineMapper = medicineMapper;
-        this.barcodeMapper = barcodeMapper;
-    }
 
     public byte[] buildTemplate() {
         return parser.buildTemplateWorkbook();
@@ -226,6 +217,7 @@ public class MedicineImportService {
                 row.getPackageUnit(),
                 row.getManufacturer(),
                 row.getPurchasePrice(),
+                row.getSuggestedRetailPrice() == null ? BigDecimal.ZERO : row.getSuggestedRetailPrice(),
                 row.getStockThreshold(),
                 row.getRemark()
         );
@@ -246,6 +238,7 @@ public class MedicineImportService {
                 row.getManufacturer(),
                 row.getBarcode(),
                 row.getPurchasePrice(),
+                row.getSuggestedRetailPrice(),
                 row.getStockThreshold(),
                 row.getBatchNo(),
                 row.getExpiryDate(),

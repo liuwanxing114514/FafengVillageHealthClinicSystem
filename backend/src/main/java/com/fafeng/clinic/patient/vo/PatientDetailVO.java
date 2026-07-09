@@ -1,5 +1,6 @@
 package com.fafeng.clinic.patient.vo;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
@@ -14,6 +15,7 @@ public record PatientDetailVO(
         String phone,
         String address,
         String remark,
+        BigDecimal totalArrears,
         String status,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt

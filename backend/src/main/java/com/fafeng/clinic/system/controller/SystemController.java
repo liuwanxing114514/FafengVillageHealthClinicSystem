@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.system.controller;
 
 import com.fafeng.clinic.common.Result;
@@ -11,15 +12,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/system")
+@RequiredArgsConstructor
 public class SystemController {
 
     private final SystemSetupService systemSetupService;
 
-    public SystemController(SystemSetupService systemSetupService) {
-        this.systemSetupService = systemSetupService;
-    }
 
     @GetMapping("/setup-status")
     public Result<SetupStatusVO> setupStatus() {

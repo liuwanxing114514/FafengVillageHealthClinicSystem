@@ -4,9 +4,15 @@ import type {
   AiDraft,
   AiStatus,
   ApproveInboundResult,
+  ApproveOutboundLine,
+  ApproveOutboundResult,
   InboundDraftPayload,
   OcrStatus,
+  OutboundDraftPayload,
+  SimilarVisitSearchResult,
   VisitDraftPayload,
+  VisitEmbeddingStatus,
+  VisitEmbeddingSyncResult,
   VoiceStatus,
   VoiceTranscription,
 } from '@/types/ai'
@@ -86,6 +92,13 @@ export async function approveVisitDraft(id: number, patientId: number): Promise<
   return postData<{ id: number }>(`/ai/drafts/${id}/approve-visit`, { patientId })
 }
 
+export async function approveOutboundDraft(
+  id: number,
+  lines: ApproveOutboundLine[],
+): Promise<ApproveOutboundResult> {
+  return postData<ApproveOutboundResult>(`/ai/drafts/${id}/approve-outbound`, { lines })
+}
+
 export function parseInboundPayload(payload: string): InboundDraftPayload {
   return JSON.parse(payload) as InboundDraftPayload
 }
@@ -94,10 +107,54 @@ export function parseVisitPayload(payload: string): VisitDraftPayload {
   return JSON.parse(payload) as VisitDraftPayload
 }
 
+export function parseOutboundPayload(payload: string): OutboundDraftPayload {
+  return JSON.parse(payload) as OutboundDraftPayload
+}
+
 export function stringifyInboundPayload(payload: InboundDraftPayload): string {
   return JSON.stringify(payload)
 }
 
 export function stringifyVisitPayload(payload: VisitDraftPayload): string {
   return JSON.stringify(payload)
+}
+
+export async function getEmbeddingStatus(): Promise<VisitEmbeddingStatus> {
+  return getData<VisitEmbeddingStatus>('/ai/embeddings/status')
+}
+
+const EMBEDDING_SYNC_TIMEOUT_MS = 600_000
+
+export async function syncEmbeddingsFull(): Promise<VisitEmbeddingSyncResult> {
+  const { data } = await http.post<{ code: number; data: VisitEmbeddingSyncResult; message?: string }>(
+    '/ai/embeddings/sync-full',
+    {},
+    { timeout: EMBEDDING_SYNC_TIMEOUT_MS },
+  )
+  if (data.code !== 0) {
+    throw data
+  }
+  return data.data
+}
+
+export async function syncEmbeddingsIncremental(): Promise<VisitEmbeddingSyncResult> {
+  const { data } = await http.post<{ code: number; data: VisitEmbeddingSyncResult; message?: string }>(
+    '/ai/embeddings/sync-incremental',
+    {},
+    { timeout: EMBEDDING_SYNC_TIMEOUT_MS },
+  )
+  if (data.code !== 0) {
+    throw data
+  }
+  return data.data
+}
+
+export async function searchSimilarVisits(payload: {
+  chiefComplaint?: string
+  presentIllness?: string
+  diagnosis?: string
+  patientId?: number | null
+  excludeVisitId?: number | null
+}): Promise<SimilarVisitSearchResult> {
+  return postData<SimilarVisitSearchResult>('/ai/embeddings/search-similar', payload)
 }

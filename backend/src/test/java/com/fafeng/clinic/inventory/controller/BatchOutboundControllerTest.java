@@ -120,7 +120,8 @@ class BatchOutboundControllerTest {
                                   ]
                                 }
                                 """.formatted(medicineId)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(400));
     }
 
     @Test
@@ -138,7 +139,8 @@ class BatchOutboundControllerTest {
                                   ]
                                 }
                                 """.formatted(medicineId, medicineId)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(400));
     }
 
     private long createMedicine(String name) throws Exception {

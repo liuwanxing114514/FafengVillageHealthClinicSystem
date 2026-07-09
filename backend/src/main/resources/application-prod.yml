@@ -8,6 +8,12 @@ spring:
     username: clinic
     password: ${CLINIC_DB_PASSWORD:change_me}
 
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 clinic:
   ai:
     enabled: ${CLINIC_AI_ENABLED:false}

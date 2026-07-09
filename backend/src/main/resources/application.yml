@@ -3,6 +3,23 @@ spring:
     name: clinic-backend
   profiles:
     active: @spring.profiles.active@
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
+      - org.springframework.ai.autoconfigure.chat.client.ChatClientAutoConfiguration
+  ai:
+    openai:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      chat:
+        options:
+          model: ${DEEPSEEK_MODEL:deepseek-chat}
+          temperature: 0.2
   threads:
     virtual:
       enabled: true
@@ -32,6 +49,16 @@ clinic:
     deepseek-base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
     deepseek-model: ${DEEPSEEK_MODEL:deepseek-chat}
     local-base-url: ${LOCAL_AI_BASE_URL:http://localhost:11434}
+    embedding:
+      enabled: ${CLINIC_EMBEDDING_ENABLED:false}
+      provider: ${CLINIC_EMBEDDING_PROVIDER:openai}
+      api-key: ${CLINIC_EMBEDDING_API_KEY:}
+      base-url: ${CLINIC_EMBEDDING_BASE_URL:https://api.siliconflow.cn/v1}
+      local-base-url: ${CLINIC_EMBEDDING_LOCAL_BASE_URL:http://localhost:1234/v1}
+      model: ${CLINIC_EMBEDDING_MODEL:BAAI/bge-m3}
+      dimensions: ${CLINIC_EMBEDDING_DIMENSIONS:1024}
+      sync-cron: ${CLINIC_EMBEDDING_SYNC_CRON:}
+      batch-size: ${CLINIC_EMBEDDING_BATCH_SIZE:16}
   voice:
     whisper-url: ${CLINIC_WHISPER_URL:}
     upload-dir: ${CLINIC_VOICE_UPLOAD_DIR:uploads/audio}

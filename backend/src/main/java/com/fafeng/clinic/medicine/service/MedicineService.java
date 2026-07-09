@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.medicine.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -31,7 +32,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 药品资料、整数单位换算与条码维护；库存下限按基本单位存储。
+ */
 @Service
+@RequiredArgsConstructor
 public class MedicineService {
 
     private static final int DEFAULT_BOX_COUNT = 5;
@@ -41,15 +48,6 @@ public class MedicineService {
     private final MedicineBarcodeMapper barcodeMapper;
     private final AuditLogService auditLogService;
 
-    public MedicineService(MedicineMapper medicineMapper,
-                           MedicineUnitConversionMapper conversionMapper,
-                           MedicineBarcodeMapper barcodeMapper,
-                           AuditLogService auditLogService) {
-        this.medicineMapper = medicineMapper;
-        this.conversionMapper = conversionMapper;
-        this.barcodeMapper = barcodeMapper;
-        this.auditLogService = auditLogService;
-    }
 
     public PageVO<MedicineListItemVO> search(String keyword, String status, int page, int size) {
         int safePage = Math.max(page, 1);
@@ -274,6 +272,8 @@ public class MedicineService {
                 : request.packageUnit().trim());
         medicine.setManufacturer(nullToEmpty(request.manufacturer()));
         medicine.setPurchasePrice(request.purchasePrice());
+        medicine.setSuggestedRetailPrice(
+                request.suggestedRetailPrice() == null ? BigDecimal.ZERO : request.suggestedRetailPrice());
         medicine.setRemark(request.remark() == null ? "" : request.remark().trim());
         medicine.setPinyinAbbr(PinyinUtils.toAbbr(medicine.getName()));
     }
@@ -396,6 +396,7 @@ public class MedicineService {
                 medicine.getPackageUnit(),
                 medicine.getManufacturer(),
                 medicine.getPurchasePrice(),
+                medicine.getSuggestedRetailPrice() == null ? BigDecimal.ZERO : medicine.getSuggestedRetailPrice(),
                 medicine.getStockThreshold(),
                 toPackagesDisplay(medicine.getStockThreshold(), medicine, conversions),
                 medicine.getPinyinAbbr(),

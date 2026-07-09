@@ -72,9 +72,10 @@ class PrescriptionControllerTest {
 
         mockMvc.perform(post("/api/prescriptions/" + prescriptionId + "/outbound-draft"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.prescriptionId").value(prescriptionId))
-                .andExpect(jsonPath("$.data.items", hasSize(1)))
-                .andExpect(jsonPath("$.data.items[0].medicineName").value("测试胶囊"));
+                .andExpect(jsonPath("$.data.id").exists())
+                .andExpect(jsonPath("$.data.draftType").value("OUTBOUND"))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.payload").exists());
     }
 
     private long createPatient() throws Exception {

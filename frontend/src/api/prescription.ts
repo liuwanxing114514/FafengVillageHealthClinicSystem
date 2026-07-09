@@ -1,6 +1,6 @@
 import { deleteData, getData, postData, putData } from '@/api/http'
+import type { AiDraft } from '@/types/ai'
 import type {
-  OutboundDraft,
   PrescriptionDetail,
   PrescriptionPrintData,
   SavePrescriptionPayload,
@@ -29,8 +29,8 @@ export async function getPrescriptionPrint(id: number): Promise<PrescriptionPrin
   return getData<PrescriptionPrintData>(`/prescriptions/${id}/print`)
 }
 
-export async function generateOutboundDraft(id: number): Promise<OutboundDraft> {
-  return postData<OutboundDraft>(`/prescriptions/${id}/outbound-draft`)
+export async function generateOutboundDraft(id: number): Promise<AiDraft> {
+  return postData<AiDraft>(`/prescriptions/${id}/outbound-draft`)
 }
 
 export async function listPrescriptionsByVisit(visitId: number): Promise<PrescriptionDetail[]> {

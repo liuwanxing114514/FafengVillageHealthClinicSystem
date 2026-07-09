@@ -25,8 +25,8 @@ class FlywayMigrationTest {
                 "SELECT version FROM flyway_schema_history WHERE success = TRUE ORDER BY installed_rank DESC LIMIT 1",
                 String.class);
         assertNotNull(count);
-        assertTrue(count >= 10, "expected migrations V0–V10 applied, got " + count);
-        assertTrue("10".equals(latest), "expected latest migration V10, got " + latest);
+        assertTrue(count >= 13, "expected migrations V0–V13 applied, got " + count);
+        assertTrue("13".equals(latest), "expected latest migration V13, got " + latest);
     }
 
     @Test

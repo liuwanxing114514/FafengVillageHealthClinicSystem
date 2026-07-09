@@ -12,6 +12,7 @@ import MedicineEditView from '@/views/medicine/MedicineEditView.vue'
 import MedicineImportView from '@/views/medicine/MedicineImportView.vue'
 import PatientListView from '@/views/patient/PatientListView.vue'
 import PatientDetailView from '@/views/patient/PatientDetailView.vue'
+import VisitListView from '@/views/visit/VisitListView.vue'
 import VisitFormView from '@/views/visit/VisitFormView.vue'
 import PrescriptionFormView from '@/views/prescription/PrescriptionFormView.vue'
 import PrescriptionPrintView from '@/views/prescription/PrescriptionPrintView.vue'
@@ -23,6 +24,7 @@ import AlertListView from '@/views/inventory/AlertListView.vue'
 import AiAssistantView from '@/views/ai/AiAssistantView.vue'
 import InboundDraftView from '@/views/ai/InboundDraftView.vue'
 import VisitDraftView from '@/views/ai/VisitDraftView.vue'
+import OutboundDraftView from '@/views/ai/OutboundDraftView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -99,6 +101,12 @@ const router = createRouter({
           meta: { title: '患者' },
         },
         {
+          path: 'visit',
+          name: 'visit-list',
+          component: VisitListView,
+          meta: { title: '病历' },
+        },
+        {
           path: 'visit/:id',
           name: 'visit-form',
           component: VisitFormView,
@@ -133,6 +141,12 @@ const router = createRouter({
           name: 'visit-draft',
           component: VisitDraftView,
           meta: { title: '病历草稿' },
+        },
+        {
+          path: 'ai/drafts/outbound/:id',
+          name: 'outbound-draft',
+          component: OutboundDraftView,
+          meta: { title: '出库草稿' },
         },
         {
           path: 'inventory/inbound',

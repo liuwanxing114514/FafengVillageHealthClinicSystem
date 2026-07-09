@@ -1,6 +1,6 @@
 package com.fafeng.clinic.ai.service;
 
-import com.fafeng.clinic.ai.client.DeepSeekClient;
+import com.fafeng.clinic.ai.client.AiChatClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -32,13 +32,13 @@ class AiVisitStructureServiceTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private DeepSeekClient deepSeekClient;
+    private AiChatClient aiChatClient;
 
     @Test
     @WithMockUser(username = "admin")
     void structureVisitCreatesDraft() throws Exception {
-        when(deepSeekClient.isConfigured()).thenReturn(true);
-        when(deepSeekClient.chatCompletion(anyString(), anyString())).thenReturn("""
+        when(aiChatClient.isConfigured()).thenReturn(true);
+        when(aiChatClient.chatCompletion(anyString(), anyString())).thenReturn("""
                 {
                   "chiefComplaint": "咳嗽3天",
                   "presentIllness": "受凉后咳嗽",

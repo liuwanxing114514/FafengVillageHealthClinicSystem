@@ -8,6 +8,13 @@ spring:
     username: postgres
     password: admin
 
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
 server:
   servlet:
     session:

@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.clinic.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -9,6 +10,12 @@ import com.fafeng.clinic.clinic.entity.PrescriptionItem;
 import com.fafeng.clinic.clinic.mapper.ClinicVisitMapper;
 import com.fafeng.clinic.clinic.mapper.PrescriptionItemMapper;
 import com.fafeng.clinic.clinic.mapper.PrescriptionMapper;
+import com.fafeng.clinic.agent.model.OutboundDraftPayload;
+import com.fafeng.clinic.agent.model.OutboundDraftPayloadMapper;
+import com.fafeng.clinic.ai.dto.CreateAiDraftRequest;
+import com.fafeng.clinic.ai.entity.AiDraft;
+import com.fafeng.clinic.ai.service.AiDraftService;
+import com.fafeng.clinic.ai.vo.AiDraftVO;
 import com.fafeng.clinic.clinic.vo.OutboundDraftItemVO;
 import com.fafeng.clinic.clinic.vo.OutboundDraftVO;
 import com.fafeng.clinic.clinic.vo.PrescriptionDetailVO;
@@ -23,6 +30,7 @@ import com.fafeng.clinic.patient.entity.Patient;
 import com.fafeng.clinic.patient.service.PatientService;
 import com.fafeng.clinic.ai.service.QuickPhraseService;
 import com.fafeng.clinic.system.service.AuditLogService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +38,14 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 处方 CRUD、打印数据与待出库草稿生成。
+ * <p>生成出库草稿时仅写入 {@code ai_draft}，不直接扣减库存。</p>
+ */
 @Service
+@RequiredArgsConstructor
 public class PrescriptionService {
 
     private static final String CLINIC_NAME = "发凤村卫生室";
@@ -43,22 +58,10 @@ public class PrescriptionService {
     private final MedicineService medicineService;
     private final AuditLogService auditLogService;
     private final QuickPhraseService quickPhraseService;
+    private final PrescriptionPrintTemplateService printTemplateService;
+    private final AiDraftService aiDraftService;
+    private final ObjectMapper objectMapper;
 
-    public PrescriptionService(PrescriptionMapper prescriptionMapper,
-                               PrescriptionItemMapper prescriptionItemMapper,
-                               ClinicVisitMapper visitMapper,
-                               PatientService patientService,
-                               MedicineService medicineService,
-                               AuditLogService auditLogService,
-                               QuickPhraseService quickPhraseService) {
-        this.prescriptionMapper = prescriptionMapper;
-        this.prescriptionItemMapper = prescriptionItemMapper;
-        this.visitMapper = visitMapper;
-        this.patientService = patientService;
-        this.medicineService = medicineService;
-        this.auditLogService = auditLogService;
-        this.quickPhraseService = quickPhraseService;
-    }
 
     @Transactional
     public PrescriptionDetailVO create(SavePrescriptionRequest request) {
@@ -132,17 +135,25 @@ public class PrescriptionService {
         Prescription prescription = requirePrescription(id);
         Patient patient = patientService.requirePatient(prescription.getPatientId());
         List<PrescriptionItemVO> items = listItemVOs(id);
+        LocalDate date = prescription.getPrescriptionDate();
 
         return new PrescriptionPrintVO(
                 CLINIC_NAME,
                 PRESCRIPTION_TITLE,
+                printTemplateService.getActiveTemplate(),
+                printTemplateService.getTemplateConfigJson(),
+                prescription.getVisitId(),
+                "全科",
                 patient.getName(),
                 formatGender(patient.getGender()),
                 patient.getAge(),
                 patient.getAddress(),
                 patient.getPhone(),
                 prescription.getDiagnosis(),
-                prescription.getPrescriptionDate(),
+                date,
+                date == null ? null : date.getYear(),
+                date == null ? null : date.getMonthValue(),
+                date == null ? null : date.getDayOfMonth(),
                 items,
                 "医生签名：");
     }
@@ -166,6 +177,25 @@ public class PrescriptionService {
                 patient.getName(),
                 prescription.getDiagnosis(),
                 items);
+    }
+
+    @Transactional
+    public AiDraftVO createOutboundAiDraft(Long id) {
+        OutboundDraftVO draft = generateOutboundDraft(id);
+        if (draft.items().isEmpty()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "处方无药品，无法生成出库清单");
+        }
+        OutboundDraftPayload payload = OutboundDraftPayloadMapper.fromPrescriptionDraft(
+                draft, "由处方 #" + id + " 生成");
+        try {
+            String payloadJson = objectMapper.writeValueAsString(payload);
+            return aiDraftService.create(new CreateAiDraftRequest(
+                    AiDraft.TYPE_OUTBOUND, payloadJson, "prescription"));
+        } catch (BusinessException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "出库草稿生成失败");
+        }
     }
 
     public List<PrescriptionDetailVO> listByVisit(Long visitId) {

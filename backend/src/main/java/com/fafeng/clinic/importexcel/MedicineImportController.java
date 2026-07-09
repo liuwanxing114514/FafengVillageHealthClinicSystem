@@ -1,3 +1,4 @@
+
 package com.fafeng.clinic.importexcel;
 
 import com.fafeng.clinic.common.Result;
@@ -16,15 +17,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/import/medicine")
+@RequiredArgsConstructor
 public class MedicineImportController {
 
     private final MedicineImportService importService;
 
-    public MedicineImportController(MedicineImportService importService) {
-        this.importService = importService;
-    }
 
     @GetMapping("/template")
     public ResponseEntity<byte[]> downloadTemplate() {

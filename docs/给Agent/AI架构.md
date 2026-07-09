@@ -15,21 +15,28 @@
 
 ---
 
-## 2. AiProvider 接口（v0.9 定义）
+## 2. AiProvider 与 Spring AI（v0.9 / v2.0.2）
 
-待 v0.9 实现时补充：
+`AiProvider` 接口保留，供业务层按 `noop` / `deepseek` / `local` 切换。v2.0.2 起 DeepSeek 实装走 **Spring AI** `ChatClient`（OpenAI 兼容 `base-url`），不再使用自研 HTTP 客户端。
 
-- 聊天补全
-- 结构化 JSON 抽取
-- 文本向量化（v2.2）
+| 能力 | 接口 / 实现 | 版本 |
+| --- | --- | --- |
+| 聊天补全 | `AiProvider.chatCompletion` → `AiChatClient` → `ChatClient` | v1.3 / v2.0.2 |
+| 结构化 JSON 抽取 | 同上（提示词约束 JSON 输出） | v1.3 |
+| Agent 工具调用 | `@Tool` + `ClinicAgentTools` + `ChatClient.tools()` | v2.0.2 |
+| 文本向量化 | `VisitEmbeddingService` + `OpenAiEmbeddingModel` | v2.2 |
 
 实现类：
 
 | 类 | 版本 | 说明 |
 | --- | --- | --- |
 | `NoopAiProvider` | v0.9 | 默认，空实现 |
-| `DeepSeekAiProvider` | v1.3 | DeepSeek API |
+| `DeepSeekAiProvider` | v1.3 / v2.0.2 | 委托 `SpringAiChatClient` |
 | `LocalAiProvider` | 远期 | Ollama / 本地模型 |
+| `UnconfiguredAiChatClient` | v2.0.2 | AI 未启用时的占位 |
+| `VisitEmbeddingService` | v2.2 | 脱敏拼接 → Embedding → `visit_embedding` |
+| `VisitSimilaritySearchService` | v2.3 | 脱敏查询 → embed → pgvector 余弦 Top-3 |
+| `EmbeddingConfiguration` | v2.2 | 条件装配 `OpenAiEmbeddingModel`（openai/local） |
 
 ---
 
@@ -103,31 +110,95 @@
 
 | 服务 | 版本 | 部署 |
 | --- | --- | --- |
-| DeepSeek API | v1.3 | 后端 HTTP 调用，无独立容器 |
+| DeepSeek API | v1.3 / v2.0.2 | Spring AI `ChatClient`（OpenAI 兼容），无独立容器 |
 | Whisper | v1.1 | `whisper-service` 容器 |
 | PaddleOCR | v1.4 | `ocr-service` 容器 |
-| pgvector | v2.2 | PostgreSQL 扩展 |
+| pgvector | v2.2 | PostgreSQL 扩展 + `visit_embedding` 表 |
+| 硅基流动 Embedding | v2.2 | `BAAI/bge-m3`，OpenAI 兼容 `/v1/embeddings` |
 
 ---
 
-## 6. Agent 工具（v2.0 定义）
+## 6. Agent 工具（v2.0 实装，v2.0.2 Spring AI 化）
 
-待 v2.0 实现时补充。只允许受控工具，禁止直接写库。
+Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → Spring AI `ChatClient` + `@Tool` 自动工具调用 → 结果摘要。
+
+### 6.1 受控工具
+
+| 工具 | 说明 | 写库 | 注册方式 |
+| --- | --- | --- | --- |
+| `searchMedicine` | 按名称/条码查药品 | 只读 | `ClinicAgentTools.@Tool` |
+| `queryInventory` | 查库存数量、批次 | 只读 | 同上 |
+| `queryExpiringMedicine` | 查临期药品（3 个月内） | 只读 | 同上 |
+| `searchPatient` | 查患者（返回脱敏） | 只读 | 同上 |
+| `searchPatientVisit` | 查历史病历 | 只读 | 同上 |
+| `generateOutboundDraft` | 生成待确认出库清单 | 写 `ai_draft`（OUTBOUND） | 同上 |
+
+业务逻辑仍由 `AgentToolRegistry` + 6 个 `AgentTool` 实现类承载；`ClinicAgentTools` 仅作 Spring AI 工具注册层。
+
+### 6.2 脱敏 Advisor
+
+`DesensitizationAdvisor`（`BaseAdvisor`）在 `ChatClient` 链中对用户消息执行 `Desensitizer` 规则，服务层调用前也会脱敏（双保险）。
+
+禁止：直接 UPDATE 库存/病历、任意 SQL、未注册工具。
+
+### 6.3 API
+
+- `POST /api/agent/chat` — 自然语言查询
+- `GET /api/agent/logs` — 执行日志（`agent_execution_log` 表）
+- `POST /api/prescriptions/{id}/outbound-draft` — 处方生成 OUTBOUND 草稿（v2.1）
+- `POST /api/ai/drafts/{id}/approve-outbound` — 医生确认批次后批量出库（v2.1）
+- `GET /api/ai/embeddings/status` — 向量化状态（v2.2）
+- `POST /api/ai/embeddings/sync-full` — 全量向量化同步（v2.2）
+- `POST /api/ai/embeddings/sync-incremental` — 增量向量化同步（v2.2）
+- `POST /api/ai/embeddings/search-similar` — 相似病例 Top-3（v2.3，脱敏摘要 + 相似度）
+
+### 6.4 前端
+
+- `AiAssistantView`：对话、工具调用时间线、待确认出库卡片
+- `OutboundDraftView`：核对 OUTBOUND 草稿、FEFO 批次、确认出库后跳转处方打印（v2.1）
+- `PrescriptionFormView`：保存处方后「生成待出库清单」→ 跳转出库草稿页（v2.1）
+- `VisitFormView`：病历录入页侧边相似病例 Top-3（v2.3，仅供参考）
+- `SettingsView`：病历向量化状态与全量/增量同步（v2.4）
+
+### 6.5 相似病例检索（v2.3）
+
+1. 前端根据当前主诉、现病史、诊断（及患者上下文）调用 `search-similar`。
+2. 后端 `VisitEmbeddingTextBuilder.buildDesensitizedSearchQuery` 脱敏后本地 embed。
+3. PostgreSQL `visit_embedding` 表按余弦距离（`<=>`）取 Top-3，返回已脱敏 `text_summary` 与相似度。
+4. 未启用向量化、无查询文本或 API 失败时返回空列表，**不阻塞病历保存**。
 
 ---
 
 ## 7. 配置项（.env）
+
+**Chat / Agent**（可用 DeepSeek 官网或硅基流动 OpenAI 兼容地址）：
 
 ```env
 CLINIC_AI_ENABLED=false
 CLINIC_AI_PROVIDER=noop
 DEEPSEEK_API_KEY=
 DEEPSEEK_BASE_URL=https://api.deepseek.com
-CLINIC_WHISPER_URL=
-CLINIC_OCR_URL=
+DEEPSEEK_MODEL=deepseek-chat
 ```
 
-详见 `.env.example`（v1.0 起维护）。
+**统一硅基流动（Chat + Embedding 同 Key，推荐生产与 IDEA 测试）**：
+
+```env
+DEEPSEEK_BASE_URL=https://api.siliconflow.cn/v1
+DEEPSEEK_MODEL=deepseek-ai/DeepSeek-V3
+CLINIC_EMBEDDING_ENABLED=true
+CLINIC_EMBEDDING_PROVIDER=openai
+CLINIC_EMBEDDING_API_KEY=
+CLINIC_EMBEDDING_BASE_URL=https://api.siliconflow.cn/v1
+CLINIC_EMBEDDING_MODEL=BAAI/bge-m3
+CLINIC_EMBEDDING_DIMENSIONS=1024
+```
+
+**IDEA dev**：Spring Boot 不自动读 `.env`；Run Configuration 需 EnvFile 或手动环境变量。数据库见 `application-dev.yml`。
+
+**向量化**：`CLINIC_EMBEDDING_ENABLED=false` 时不影响基础业务；BGE 模型勿传 `dimensions` 参数给 API。
+
+详见 [`.env.example`](../../.env.example)。
 
 ---
 
@@ -141,5 +212,8 @@ CLINIC_OCR_URL=
 | v0.9 | 待填：AiProvider 接口、ai_draft 表 |
 | v1.3 | DeepSeek、Desensitizer、VISIT 草稿确认 |
 | v1.4 | PaddleOCR 容器、OCR 入库 INBOUND 草稿、批准入库 |
-| v2.0 | 待填：Agent 工具列表、execution_log |
-| v2.2 | 待填：向量化 pipeline |
+| v2.0 | Agent 6 工具、AgentOrchestrator、agent_execution_log、AI 助手页 |
+| v2.0.2 | Spring AI：ChatClient 替换 HttpDeepSeekClient；@Tool 替换 JSON 编排；DesensitizationAdvisor |
+| v2.1 | 处方→出库→打印：`approveOutbound`、处方页生成 OUTBOUND 草稿、`OutboundDraftView` 确认出库 |
+| v2.2 | `visit_embedding`、脱敏向量化、`VisitEmbeddingService`、硅基流动/本地 Embedding API |
+| v2.3 | 相似病例检索：`VisitSimilaritySearchService`、病历页 `SimilarVisitPanel` |

@@ -21,6 +21,12 @@ public record VisitDetailVO(
         String diagnosis,
         String treatment,
         String remark,
+        BigDecimal amountDue,
+        BigDecimal amountPaid,
+        BigDecimal balance,
+        BigDecimal suggestedAmountDue,
+        BigDecimal referencePurchaseCost,
+        BigDecimal patientTotalArrears,
         String status,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt

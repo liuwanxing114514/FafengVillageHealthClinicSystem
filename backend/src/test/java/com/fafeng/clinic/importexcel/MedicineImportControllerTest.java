@@ -48,7 +48,7 @@ class MedicineImportControllerTest {
                 MedicineImportExcelParser.TEMPLATE_HEADERS.toArray(String[]::new),
                 {
                         "Excel导入药" + suffix, "通用名", "片剂", "100片", "片", "盒", "24",
-                        "测试药厂", barcode, "6.5", "120", "B-EX-" + suffix, "2027-12-31", "48", "导入测试"
+                        "测试药厂", barcode, "6.5", "10.0", "120", "B-EX-" + suffix, "2027-12-31", "48", "导入测试"
                 }
         });
 
@@ -93,10 +93,10 @@ class MedicineImportControllerTest {
         byte[] workbook = buildWorkbook(new String[][]{
                 MedicineImportExcelParser.TEMPLATE_HEADERS.toArray(String[]::new),
                 {
-                        "重复A", "", "", "", "片", "盒", "24", "", "6907777000001", "1", "", "B1", "", "10", ""
+                        "重复A", "", "", "", "片", "盒", "24", "", "6907777000001", "1", "1.5", "", "B1", "", "10", ""
                 },
                 {
-                        "重复B", "", "", "", "片", "盒", "24", "", "6907777000001", "1", "", "B2", "", "10", ""
+                        "重复B", "", "", "", "片", "盒", "24", "", "6907777000001", "1", "1.5", "", "B2", "", "10", ""
                 }
         });
 

@@ -8,27 +8,18 @@ import com.fafeng.clinic.ai.model.VisitDraftPayload;
 import com.fafeng.clinic.ai.provider.AiProvider;
 import com.fafeng.clinic.ai.vo.AiDraftVO;
 import com.fafeng.clinic.common.BusinessException;
-import com.fafeng.clinic.common.Desensitizer;
 import com.fafeng.clinic.common.ErrorCode;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AiVisitStructureService {
 
     private final AiDraftService aiDraftService;
     private final AiProvider activeAiProvider;
     private final ClinicAiProperties properties;
     private final ObjectMapper objectMapper;
-
-    public AiVisitStructureService(AiDraftService aiDraftService,
-                                   AiProvider activeAiProvider,
-                                   ClinicAiProperties properties,
-                                   ObjectMapper objectMapper) {
-        this.aiDraftService = aiDraftService;
-        this.activeAiProvider = activeAiProvider;
-        this.properties = properties;
-        this.objectMapper = objectMapper;
-    }
 
     public AiDraftVO structureVisit(String text, Long patientId) {
         if (!properties.isEnabled()) {
@@ -37,7 +28,7 @@ public class AiVisitStructureService {
         if (!activeAiProvider.isAvailable()) {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 服务不可用，请检查配置");
         }
-        String desensitized = Desensitizer.desensitizeText(text.trim());
+        String desensitized = com.fafeng.clinic.common.Desensitizer.desensitizeText(text.trim());
         String response = activeAiProvider.chatCompletion(properties.getVisitStructurePrompt(), desensitized);
 
         JsonNode root = AiJsonParser.parseJsonContent(objectMapper, response);

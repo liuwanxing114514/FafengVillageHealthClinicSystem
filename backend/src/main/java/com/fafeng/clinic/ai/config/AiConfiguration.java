@@ -1,9 +1,12 @@
 package com.fafeng.clinic.ai.config;
 
+import com.fafeng.clinic.ai.client.AiChatClient;
+import com.fafeng.clinic.ai.client.UnconfiguredAiChatClient;
 import com.fafeng.clinic.ai.provider.AiProvider;
 import com.fafeng.clinic.ai.provider.DeepSeekAiProvider;
 import com.fafeng.clinic.ai.provider.LocalAiProvider;
 import com.fafeng.clinic.ai.provider.NoopAiProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,8 +15,14 @@ import java.util.Locale;
 import java.util.Map;
 
 @Configuration
-@EnableConfigurationProperties({ClinicAiProperties.class, ClinicVoiceProperties.class, ClinicOcrProperties.class})
+@EnableConfigurationProperties({ClinicAiProperties.class, ClinicVoiceProperties.class, ClinicOcrProperties.class, ClinicEmbeddingProperties.class})
 public class AiConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(AiChatClient.class)
+    public AiChatClient unconfiguredAiChatClient() {
+        return new UnconfiguredAiChatClient();
+    }
 
     @Bean
     public Map<String, AiProvider> aiProviders(NoopAiProvider noop,

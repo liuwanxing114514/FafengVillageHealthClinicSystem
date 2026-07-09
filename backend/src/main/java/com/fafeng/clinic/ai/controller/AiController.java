@@ -1,20 +1,29 @@
 package com.fafeng.clinic.ai.controller;
 
+import com.fafeng.clinic.ai.dto.ApproveOutboundDraftRequest;
 import com.fafeng.clinic.ai.dto.ApproveVisitDraftRequest;
 import com.fafeng.clinic.ai.dto.CreateAiDraftRequest;
+import com.fafeng.clinic.ai.dto.SimilarVisitSearchRequest;
 import com.fafeng.clinic.ai.dto.StructureVisitRequest;
 import com.fafeng.clinic.ai.dto.UpdateAiDraftPayloadRequest;
 import com.fafeng.clinic.ai.dto.UpdateAiDraftStatusRequest;
 import com.fafeng.clinic.ai.service.AiDraftService;
 import com.fafeng.clinic.ai.service.AiInboundOcrService;
 import com.fafeng.clinic.ai.service.AiVisitStructureService;
+import com.fafeng.clinic.ai.service.VisitEmbeddingService;
+import com.fafeng.clinic.ai.service.VisitSimilaritySearchService;
+import com.fafeng.clinic.ai.vo.SimilarVisitSearchResultVO;
 import com.fafeng.clinic.ai.vo.AiDraftVO;
 import com.fafeng.clinic.ai.vo.AiStatusVO;
 import com.fafeng.clinic.ai.vo.ApproveInboundResultVO;
+import com.fafeng.clinic.ai.vo.ApproveOutboundResultVO;
 import com.fafeng.clinic.ai.vo.OcrStatusVO;
+import com.fafeng.clinic.ai.vo.VisitEmbeddingStatusVO;
+import com.fafeng.clinic.ai.vo.VisitEmbeddingSyncResultVO;
 import com.fafeng.clinic.clinic.vo.VisitDetailVO;
 import com.fafeng.clinic.common.Result;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,18 +39,34 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/ai")
+@RequiredArgsConstructor
 public class AiController {
 
     private final AiDraftService aiDraftService;
     private final AiVisitStructureService visitStructureService;
     private final AiInboundOcrService inboundOcrService;
+    private final VisitEmbeddingService visitEmbeddingService;
+    private final VisitSimilaritySearchService visitSimilaritySearchService;
 
-    public AiController(AiDraftService aiDraftService,
-                        AiVisitStructureService visitStructureService,
-                        AiInboundOcrService inboundOcrService) {
-        this.aiDraftService = aiDraftService;
-        this.visitStructureService = visitStructureService;
-        this.inboundOcrService = inboundOcrService;
+    @GetMapping("/embeddings/status")
+    public Result<VisitEmbeddingStatusVO> embeddingStatus() {
+        return Result.ok(visitEmbeddingService.getStatus());
+    }
+
+    @PostMapping("/embeddings/sync-full")
+    public Result<VisitEmbeddingSyncResultVO> syncEmbeddingsFull() {
+        return Result.ok(visitEmbeddingService.syncFull());
+    }
+
+    @PostMapping("/embeddings/sync-incremental")
+    public Result<VisitEmbeddingSyncResultVO> syncEmbeddingsIncremental() {
+        return Result.ok(visitEmbeddingService.syncIncremental());
+    }
+
+    @PostMapping("/embeddings/search-similar")
+    public Result<SimilarVisitSearchResultVO> searchSimilarVisits(
+            @Valid @RequestBody SimilarVisitSearchRequest request) {
+        return Result.ok(visitSimilaritySearchService.search(request));
     }
 
     @GetMapping("/status")
@@ -105,5 +130,12 @@ public class AiController {
             @PathVariable Long id,
             @Valid @RequestBody ApproveVisitDraftRequest request) {
         return Result.ok(aiDraftService.approveVisit(id, request));
+    }
+
+    @PostMapping("/drafts/{id}/approve-outbound")
+    public Result<ApproveOutboundResultVO> approveOutbound(
+            @PathVariable Long id,
+            @Valid @RequestBody ApproveOutboundDraftRequest request) {
+        return Result.ok(aiDraftService.approveOutbound(id, request));
     }
 }

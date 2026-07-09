@@ -1,9 +1,14 @@
 export interface VisitListItem {
   id: number
   patientId: number
+  patientName: string
+  patientGender: string
   visitTime: string
   chiefComplaint: string | null
   diagnosis: string | null
+  amountDue: number
+  amountPaid: number
+  balance: number
   status: string
 }
 
@@ -25,9 +30,20 @@ export interface VisitDetail {
   diagnosis: string | null
   treatment: string | null
   remark: string | null
+  amountDue: number
+  amountPaid: number
+  balance: number
+  suggestedAmountDue: number
+  referencePurchaseCost: number
+  patientTotalArrears: number
   status: string
   createdAt: string
   updatedAt: string
+}
+
+export interface VisitFeeSummary {
+  suggestedAmountDue: number
+  referencePurchaseCost: number
 }
 
 export interface SaveVisitPayload {
@@ -46,4 +62,15 @@ export interface SaveVisitPayload {
   diagnosis?: string
   treatment?: string
   remark?: string
+  amountDue?: number | null
+  amountPaid?: number | null
+}
+
+export interface VisitSearchParams {
+  keyword?: string
+  dateFrom?: string
+  dateTo?: string
+  arrearsOnly?: boolean
+  page?: number
+  size?: number
 }

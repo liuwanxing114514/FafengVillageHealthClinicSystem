@@ -29,11 +29,17 @@
 | | v1.3 | DeepSeek 结构化整理 | 5.13 |
 | 第三期：OCR 入库 | v1.4 | 拍照识别单据入库 | 5.2.3 |
 | 第四期：业务扩展 | v1.5 | 批量出库 | 5.3.3 |
-| | v1.6 | 处方模板自定义 | 5.9（远期） |
+| | v1.6 | 处方模板与就诊收费 | 5.8、5.9 |
 | 第五期：AI Agent | v2.0 | 自然语言查询 | 5.16 |
+| | v2.0.1 | 工程化（Lombok + API 文档） | — |
+| | v2.0.2 | AI 层 Spring AI 化 | — |
 | | v2.1 | 流程自动化 | 5.17 |
 | 第六期：RAG 知识库 | v2.2 | 脱敏病历向量化 | 5.14 |
 | | v2.3 | 相似病例检索 | 5.15 |
+| 第七期：AI 运维与扩展 | v2.4 | RAG 运维与 Embedding 管理 | 5.19 |
+| | v2.5 | 本地 LLM 接入 | 3.4、5.18 |
+| | v2.6 | 导出与病历 PDF | 5.20 |
+| | **v3.0** | **AI 全功能可部署基线** | 七、八 |
 
 ---
 
@@ -416,22 +422,49 @@
 
 ---
 
-### v1.6 处方模板自定义
+### v1.6 处方模板与就诊收费
 
-**前置依赖**：v0.5
+**前置依赖**：v0.3、v0.4、v0.5
 
 **目标**：
 
-- 若拿到真实处方纸样式，支持版式配置和对齐。
+- 按真实预印处方纸对齐浏览器打印；病历记录应收/实收并汇总欠款；病历独立入口与快速建档。
 
 **交付**：
 
-- 可配置页眉、字段位置、字号。
-- 浏览器打印与真实处方纸对齐。
+**药品**
+
+- 药品资料增加 **建议零售价**（`suggested_retail_price`，`numeric(12,2)`）。
+
+**处方打印（预印纸对齐）**
+
+- 保留现有 A4 通用模板为默认（`default-a4`）。
+- 新增预印纸叠加模板（`preprinted-fafeng`）：仅打印数据，不重复打印纸上已有标签/下划线/标题。
+- 可配置页眉（A4 用）、字段位置、字号、药品区行高；设置页可切换模板。
+- 预印模式：日期拆年/月/日；门诊病历号位置只印**数字**（无英文标签）；科别固定「全科」。
+- **完全不打印**：费别、卡号、处方金额、调剂。
+
+**就诊收费与欠款**
+
+- 每条就诊病历增加 **应收**（`amount_due`）、**实收**（`amount_paid`），`numeric(12,2)`。
+- **默认应收** = 关联处方药品 Σ(建议零售价 × 数量)，打开病历时自动填入，旁注可手工修改。
+- **参考进货成本** = Σ(进货单价 × 数量)，仅在病历界面展示，**不打印**。
+- 医生手改应收后，若处方变更，**弹窗确认**是否按处方更新应收。
+- 患者累计欠款 = 有效病历中 `max(0, 应收 - 实收)` 之和；进入患者详情或新建病历时醒目提示。
+
+**病历独立入口**
+
+- 左侧菜单「病历」；全量就诊列表（时间倒序）；支持关键词、日期、欠款筛选。
+- 可直接新建病历：搜索选择患者；患者不存在时 **弹窗快速建档**，不离开病历页、不丢失已填内容。
 
 **触发条件**：
 
-- 需使用者提供纸质处方样本后再开发。
+- 处方对齐：需使用者提供纸质处方样本（已提供协会预印笺样本）。
+
+**不做**：
+
+- 支付渠道、分期、独立收银台。
+- 预印纸打印费别/卡号/处方金额/调剂/进货成本。
 
 ---
 
@@ -473,9 +506,95 @@
 
 ---
 
+### v2.0.1 工程化（Lombok + API 文档 + 注释）
+
+**前置依赖**：v2.0
+
+**目标**：全库统一工程规范，**不改变业务行为**；便于开发与调试。
+
+**交付**：
+
+**Lombok（全库统一）**
+
+- 根 `pom.xml` 引入 Lombok；`lombok.config` 统一配置。
+- **Entity / Model**（MyBatis、Jackson 草稿类）：`@Data` + `@NoArgsConstructor`（替代手写 get/set）。
+- **Service / Component**：`@RequiredArgsConstructor`（替代手写构造器）。
+- **DTO / VO**：继续用 Java `record`（已是简洁形态，不强行改 Lombok）。
+
+**springdoc OpenAPI（仅 dev 生效）**
+
+- 依赖 `springdoc-openapi-starter-webmvc-ui`（Spring Boot 3 用 springdoc，不用旧版 springfox）。
+- `application-dev.yml`：`springdoc.swagger-ui.enabled=true`；`prod` / `docker` profile **完全禁用** API 文档与 Swagger UI。
+- `SecurityConfig`：仅 dev profile 放行 `/swagger-ui/**`、`/v3/api-docs/**`。
+- 全局 `OpenAPI` Bean；主要 Controller 加 `@Tag` / `@Operation`（至少 AI、Agent、库存、处方模块）。
+
+**注释**
+
+- 各业务包 `package-info.java` 补模块说明。
+- Controller、核心 Service、AI/Agent 编排类：类级 JavaDoc（业务规则、草稿门禁、禁止直接改库存等）。
+- 不对每个 getter 或 trivial 方法写注释。
+
+**不做**：
+
+- 不改 API 路径与响应结构（除非文档注解所需）。
+- 不顺带做 v2.1 业务或 Spring AI 迁移（属 v2.0.2）。
+
+**验收**：
+
+- `mvn test` 全部通过；`npm run build` 通过。
+- prod/docker 构建产物中 swagger 不可访问。
+- Entity 样板代码显著减少。
+
+---
+
+### v2.0.2 AI 层 Spring AI 化
+
+**前置依赖**：v2.0.1（建议，非强制）、v2.0、v1.3
+
+**目标**：用 **Spring AI** 替换自研 `HttpDeepSeekClient` + JSON 工具计划编排，**不造 HTTP/Agent 轮子**；诊所业务规则不变。
+
+**交付**：
+
+**依赖与配置**
+
+- `spring-ai-starter-model-openai`（DeepSeek 走 OpenAI 兼容 `base-url` + `api-key`）。
+- `.env.example` / `application.yml` 映射现有 `DEEPSEEK_*`、`CLINIC_AI_ENABLED`；`enabled=false` 时行为与现 noop 一致。
+
+**替换范围**
+
+| 现实现 | Spring AI |
+| --- | --- |
+| `HttpDeepSeekClient` / `DeepSeekAiProvider` | `ChatClient` + 条件 Bean |
+| `AiVisitStructureService` / `AiInboundOcrService` 中的 `chatCompletion` | `ChatClient` 调用 |
+| `AgentOrchestrator` + JSON 工具计划 | `@Tool` + `ToolCallback` / `ChatClient.tools()` |
+| 6 个 Agent 工具业务逻辑 | 保留，仅改注册与调用方式 |
+
+**必须保留（不自研替代）**
+
+- `Desensitizer`：实现为 Spring AI `Advisor` 或调用前拦截。
+- `ai_draft` 草稿门禁；`generateOutboundDraft` 仍只写草稿。
+- Whisper / OCR 独立 HTTP 客户端（不在本版改）。
+
+**测试与文档**
+
+- 更新 `AiVisitStructureServiceTest`、`AgentControllerTest` 等（mock `ChatClient` 或测试替身）。
+- 更新 `docs/给Agent/AI架构.md` §2、§6。
+
+**不做**：
+
+- 不改为微服务；不顺带 Lombok（属 v2.0.1）。
+- v2.1 处方→出库业务（属 v2.1）。
+
+**验收**：
+
+- AI 关闭时基础业务无报错；Agent 查询与出库草稿行为与 v2.0 一致。
+- `mvn test` 全部通过。
+
+---
+
 ### v2.1 流程自动化
 
-**前置依赖**：v2.0、v0.5、v0.6
+**前置依赖**：v2.0.2（建议）、v2.0、v0.5、v0.6
 
 **目标**：
 
@@ -523,6 +642,113 @@
 - 病历录入页：根据当前主诉/现病史/诊断检索 Top-3 相似历史病例。
 - 仅展示脱敏后的摘要，供医生参考。
 - 明确 UI 提示：「仅供参考，不替代诊断」。
+
+---
+
+## 第七期：AI 运维与扩展（v2.4–v3.0）
+
+**前置依赖**：v2.3（RAG 检索可用）、v2.0.2（Spring AI）
+
+目标：让诊所**长期稳定使用**全部 AI 能力，并补齐日常运维与导出便利；**不新增诊断建议类 AI**。
+
+---
+
+### v2.4 RAG 运维与 Embedding 管理
+
+**分支**：`v2.4-rag-ops`
+
+**交付**：
+
+- 系统设置页（或独立管理区）：展示 Embedding 状态（`GET /api/ai/embeddings/status` 已有字段）。
+- 一键触发全量 / 增量同步（复用现有 `sync-full` / `sync-incremental` API）。
+- 同步结果 toast（成功/失败条数、耗时）；进行中 loading，防重复点击。
+- 展示 `pendingCount`、`latestSyncedAt`；`CLINIC_EMBEDDING_ENABLED=false` 时隐藏或禁用操作并说明原因。
+- 文档：`DEPLOYMENT.md` 补充「首次启用 RAG 后需全量同步」SOP。
+
+**不做**：
+
+- 不改 v2.2 同步算法、不改向量模型。
+- 不做相似检索算法调优（属 v2.3，本版仅运维入口）。
+
+**验收**：
+
+- 管理员可在 UI 触发同步并看到状态变化。
+- Embedding 关闭时页面不报错，基础业务不受影响。
+
+---
+
+### v2.5 本地 LLM 接入
+
+**分支**：`v2.5-local-llm`
+
+**交付**：
+
+- 实装 `LocalAiProvider`：通过 OpenAI 兼容接口接 **Ollama / LM Studio**（Chat）。
+- `clinic.ai.provider=local` 时：结构化整理、Agent 对话走本地 `ChatClient`（与 v2.0.2 条件 Bean 一致）。
+- Embedding：`CLINIC_EMBEDDING_PROVIDER=local` 端到端验证（bge 或本地 embed 模型）。
+- `.env.example` / `application.yml` / `DEPLOYMENT.md`：本地模型部署与切换说明。
+- 单元测试：mock 或 Testcontainers 可选；至少 provider 切换与 noop 降级测试。
+
+**不做**：
+
+- 不捆绑特定模型权重；不实现模型训练/微调。
+- Whisper / OCR 容器改造（仍独立 HTTP 服务）。
+
+**验收**：
+
+- 断外网 + 本地 Ollama 可用时，Agent 查询与 AI 整理可用。
+- `provider=noop` 或本地不可达时，基础业务无报错。
+
+---
+
+### v2.6 导出与病历 PDF
+
+**分支**：`v2.6-export-pdf`
+
+**交付**：
+
+- **库存流水页**：按当前筛选条件导出 Excel（固定列，与列表字段一致；不含任意表头适配）。
+- **病历详情/录入页**：「保存 PDF」按钮（复用 v1.6 处方页 `html2pdf.js` 方案或同等实现）。
+- PDF 文件名规范，如 `病历-{id}-{日期}.pdf`；A4 可打印布局。
+- 导出/PDF 失败时友好提示，不阻塞页面其他操作。
+
+**不做**：
+
+- 不做自定义报表设计器、不做批量导出全部历史库。
+- 不在 PDF 中打印参考进货成本等仅内部字段（与 v1.6 一致）。
+
+**验收**：
+
+- 流水 Excel 与页面筛选结果一致。
+- 病历 PDF 含主诉/诊断等正文，布局可读。
+
+---
+
+### v3.0 AI 全功能可部署基线
+
+**分支**：`v3.0-ai-release`
+
+**前置依赖**：v2.3 + 建议 v2.4–v2.6 已合并 `develop`
+
+**目标**：诊所可**长期稳定运行**含 AI/RAG/Agent 的完整系统（对标 v1.0，但覆盖第二期–第七期全部能力）。
+
+**交付**：
+
+- `docker-compose.yml` + profile 文档：postgres、backend、frontend、whisper、ocr 一键说明。
+- `DEPLOYMENT.md`：**完整验收清单**（v1.0 基线 + v1.1–v2.3 + v2.4–v2.6 增量项）。
+- `README.md`：功能一览与最低配置（可完全关闭 AI 运行）。
+- 演示数据脚本：可选刷新，含若干脱敏样例病历供 RAG 自测。
+- 关键 smoke：文档化手工验收步骤（或补充少量集成测试）；`mvn test` + `npm run build` 全绿。
+
+**不做**：
+
+- 不新增业务功能；不顺带大重构。
+- 不强制诊所启用全部 AI 容器。
+
+**验收**：
+
+- 按 DEPLOYMENT v3.0 清单逐项通过。
+- AI 全关时与 v1.0 同等稳定；按需开启 Whisper/OCR/Embedding/Agent 均可独立工作。
 
 ---
 

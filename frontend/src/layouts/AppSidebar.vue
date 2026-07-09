@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { MENU_ITEMS } from '@/config/menu'
 import {
   ChatDotRound,
+  Document,
   Download,
   FirstAidKit,
   Fold,
@@ -38,6 +39,7 @@ const iconMap: Record<string, typeof HomeFilled> = {
   Warning,
   Operation,
   ChatDotRound,
+  Document,
   Setting,
 }
 
@@ -50,6 +52,7 @@ const activeMenu = computed(() => {
   if (path.startsWith('/inventory/outbound')) return '/inventory/outbound'
   if (path.startsWith('/inventory/flows')) return '/inventory/flows'
   if (path.startsWith('/inventory/alerts')) return '/inventory/alerts'
+  if (path.startsWith('/visit')) return '/visit'
   if (path.startsWith('/ai')) return '/ai'
   if (path.startsWith('/settings')) return '/settings'
   if (path === '/') return '/'

@@ -1,19 +1,16 @@
 package com.fafeng.clinic.ai.provider;
 
-import com.fafeng.clinic.ai.client.DeepSeekClient;
+import com.fafeng.clinic.ai.client.AiChatClient;
 import com.fafeng.clinic.ai.config.ClinicAiProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class DeepSeekAiProvider implements AiProvider {
 
     private final ClinicAiProperties properties;
-    private final DeepSeekClient deepSeekClient;
-
-    public DeepSeekAiProvider(ClinicAiProperties properties, DeepSeekClient deepSeekClient) {
-        this.properties = properties;
-        this.deepSeekClient = deepSeekClient;
-    }
+    private final AiChatClient aiChatClient;
 
     @Override
     public String name() {
@@ -22,11 +19,11 @@ public class DeepSeekAiProvider implements AiProvider {
 
     @Override
     public boolean isAvailable() {
-        return properties.isEnabled() && deepSeekClient.isConfigured();
+        return properties.isEnabled() && aiChatClient.isConfigured();
     }
 
     @Override
     public String chatCompletion(String systemPrompt, String userMessage) {
-        return deepSeekClient.chatCompletion(systemPrompt, userMessage);
+        return aiChatClient.chatCompletion(systemPrompt, userMessage);
     }
 }

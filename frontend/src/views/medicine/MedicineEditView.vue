@@ -33,6 +33,7 @@ const form = reactive({
   packageUnit: '盒',
   manufacturer: '',
   purchasePrice: 0,
+  suggestedRetailPrice: 0,
   stockThreshold: null as number | null,
   remark: '',
 })
@@ -67,6 +68,7 @@ async function loadDetail() {
       packageUnit: detail.value.packageUnit,
       manufacturer: detail.value.manufacturer,
       purchasePrice: Number(detail.value.purchasePrice),
+      suggestedRetailPrice: Number(detail.value.suggestedRetailPrice ?? 0),
       stockThreshold: Number(detail.value.stockThreshold),
       remark: detail.value.remark,
     })
@@ -93,6 +95,7 @@ async function onSave() {
       packageUnit: form.packageUnit.trim(),
       manufacturer: form.manufacturer.trim(),
       purchasePrice: form.purchasePrice,
+      suggestedRetailPrice: form.suggestedRetailPrice,
       stockThreshold: form.stockThreshold,
       remark: form.remark.trim(),
     }
@@ -215,6 +218,9 @@ onMounted(loadDetail)
         </el-form-item>
         <el-form-item label="进货单价">
           <el-input-number v-model="form.purchasePrice" :min="0" :precision="2" />
+        </el-form-item>
+        <el-form-item label="建议零售价">
+          <el-input-number v-model="form.suggestedRetailPrice" :min="0" :precision="2" />
         </el-form-item>
         <el-form-item label="库存下限">
           <el-input-number
