@@ -332,7 +332,8 @@ DataGrip / DBeaver 按上表新建数据源即可；表在 **数据库 `postgres
 
 ```powershell
 # 后端：IDEA 运行 ClinicApplication，Active profiles = dev → http://localhost:8080
-# 前端：
+# 前端（本机）：https://localhost:5173
+# 前端（手机同 WiFi）：https://<电脑局域网IP>:5173（npm run dev 已启用 HTTPS，手机需信任自签名证书）
 cd frontend
 npm install   # 首次
 npm run dev     # http://localhost:5173，/api 代理到 8080
@@ -374,13 +375,15 @@ npm run dev     # http://localhost:5173，/api 代理到 8080
 
 ## 十三、手机浏览器与 PWA（v2.4）
 
-1. 手机 Chrome / Safari 访问诊所前端地址（生产 HTTPS 或局域网 `http://<诊所机IP>`）并登录。
-2. **添加到主屏幕**：
+1. 手机 Chrome / Safari 访问诊所前端 **HTTPS** 地址并登录（摄像头/扫码仅安全上下文可用，纯 HTTP 局域网 IP 无法调摄像头）。
+2. **开发机真机测试**：`cd frontend && npm run dev`（已启用 HTTPS），手机访问 `https://<电脑IP>:5173`，首次需信任自签名证书。
+3. **添加到主屏幕**：
    - Android Chrome：菜单 →「安装应用」或「添加到主屏幕」
    - iOS Safari：分享 →「添加到主屏幕」
-3. **典型手机场景**：入库/出库扫码（v0.7）、设置页向量同步、病历录入与相似病例参考。
+3. **典型手机场景**：入库/出库扫码（v0.7，**须 HTTPS**）、设置页向量同步、病历录入与相似病例参考。
 4. **重要说明**：PWA 仅缓存静态资源（JS/CSS/图标），**不缓存业务 API**；断网时无法操作库存/病历（与 v1.0 断网基线一致，须能访问 backend）。
-5. **开发验收**：Chrome DevTools 设备模拟（宽度 ≤768px）检查抽屉菜单；真机与开发机同一局域网访问 `npm run dev` 或 Docker 前端端口。
+5. **生产环境手机扫码**：若仅用 `http://` 访问，浏览器会拒绝摄像头；诊所机需配置 HTTPS（反向代理 + 证书）。
+6. **开发验收**：Chrome DevTools 设备模拟（宽度 ≤768px）检查抽屉菜单；真机用 `https://电脑IP:5173` 访问。
 
 ---
 
