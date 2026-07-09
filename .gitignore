@@ -52,3 +52,6 @@ uploads/
 *.tmp
 *.temp
 ~$*
+
+# Deploy pack output
+dist/
