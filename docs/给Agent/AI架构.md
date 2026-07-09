@@ -110,9 +110,32 @@
 
 ---
 
-## 6. Agent 工具（v2.0 定义）
+## 6. Agent 工具（v2.0 实装）
 
-待 v2.0 实现时补充。只允许受控工具，禁止直接写库。
+Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → DeepSeek 输出 JSON 工具计划 → 白名单工具执行 → 结果摘要。
+
+### 6.1 受控工具
+
+| 工具 | 说明 | 写库 |
+| --- | --- | --- |
+| `searchMedicine` | 按名称/条码查药品 | 只读 |
+| `queryInventory` | 查库存数量、批次 | 只读 |
+| `queryExpiringMedicine` | 查临期药品（3 个月内） | 只读 |
+| `searchPatient` | 查患者（返回脱敏） | 只读 |
+| `searchPatientVisit` | 查历史病历 | 只读 |
+| `generateOutboundDraft` | 生成待确认出库清单 | 写 `ai_draft`（OUTBOUND） |
+
+禁止：直接 UPDATE 库存/病历、任意 SQL、未注册工具。
+
+### 6.2 API
+
+- `POST /api/agent/chat` — 自然语言查询
+- `GET /api/agent/logs` — 执行日志（`agent_execution_log` 表）
+
+### 6.3 前端
+
+- `AiAssistantView`：对话、工具调用时间线、待确认出库卡片
+- `OutboundDraftView`：查看 OUTBOUND 草稿（批准出库在 v2.1）
 
 ---
 
@@ -141,5 +164,5 @@ CLINIC_OCR_URL=
 | v0.9 | 待填：AiProvider 接口、ai_draft 表 |
 | v1.3 | DeepSeek、Desensitizer、VISIT 草稿确认 |
 | v1.4 | PaddleOCR 容器、OCR 入库 INBOUND 草稿、批准入库 |
-| v2.0 | 待填：Agent 工具列表、execution_log |
+| v2.0 | Agent 6 工具、AgentOrchestrator、agent_execution_log、AI 助手页 |
 | v2.2 | 待填：向量化 pipeline |

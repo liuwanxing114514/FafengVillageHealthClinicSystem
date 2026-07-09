@@ -11,7 +11,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.fafeng.clinic.patient.mapper",
         "com.fafeng.clinic.clinic.mapper",
         "com.fafeng.clinic.inventory.mapper",
-        "com.fafeng.clinic.ai.mapper"
+        "com.fafeng.clinic.ai.mapper",
+        "com.fafeng.clinic.agent.mapper"
 })
 public class ClinicApplication {
 

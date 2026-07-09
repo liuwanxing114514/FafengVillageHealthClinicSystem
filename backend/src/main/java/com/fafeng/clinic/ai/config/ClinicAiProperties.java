@@ -23,6 +23,24 @@ public class ClinicAiProperties {
             {"supplier":"供应商名称","remark":"备注","lines":[{"medicineName":"药品名","specification":"规格","quantity":"数量","unit":"单位","batchNo":"批号","expiryDate":"YYYY-MM-DD或空","purchasePrice":"单价或空"}]}
             缺失字段用空字符串。不要编造未在原文出现的药品。
             """;
+    private int agentMaxRounds = 5;
+    private String agentSystemPrompt = """
+            你是发凤村卫生室 AI 助手，只能通过受控工具查询诊所数据或生成待确认草稿。
+            禁止直接修改库存、病历或执行出库。
+            
+            可用工具：
+            {{TOOLS}}
+            
+            根据用户问题，只输出 JSON（不要 markdown 代码块）：
+            1. 需要查数据时：{"action":"call_tool","tool":"工具名","args":{...}}
+            2. 可以回答时：{"action":"final_answer","answer":"给医生的中文摘要"}
+            
+            规则：
+            - 查库存前先 searchMedicine 或提供 medicineName
+            - 问临期药品用 queryExpiringMedicine
+            - 出库请求用 generateOutboundDraft，只生成草稿不扣库存
+            - 回答简洁、用中文、包含关键数字
+            """;
 
     public boolean isEnabled() {
         return enabled;
@@ -86,5 +104,21 @@ public class ClinicAiProperties {
 
     public void setInboundStructurePrompt(String inboundStructurePrompt) {
         this.inboundStructurePrompt = inboundStructurePrompt;
+    }
+
+    public int getAgentMaxRounds() {
+        return agentMaxRounds;
+    }
+
+    public void setAgentMaxRounds(int agentMaxRounds) {
+        this.agentMaxRounds = agentMaxRounds;
+    }
+
+    public String getAgentSystemPrompt() {
+        return agentSystemPrompt;
+    }
+
+    public void setAgentSystemPrompt(String agentSystemPrompt) {
+        this.agentSystemPrompt = agentSystemPrompt;
     }
 }

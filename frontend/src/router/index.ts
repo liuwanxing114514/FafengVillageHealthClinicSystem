@@ -24,6 +24,7 @@ import AlertListView from '@/views/inventory/AlertListView.vue'
 import AiAssistantView from '@/views/ai/AiAssistantView.vue'
 import InboundDraftView from '@/views/ai/InboundDraftView.vue'
 import VisitDraftView from '@/views/ai/VisitDraftView.vue'
+import OutboundDraftView from '@/views/ai/OutboundDraftView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -140,6 +141,12 @@ const router = createRouter({
           name: 'visit-draft',
           component: VisitDraftView,
           meta: { title: '病历草稿' },
+        },
+        {
+          path: 'ai/drafts/outbound/:id',
+          name: 'outbound-draft',
+          component: OutboundDraftView,
+          meta: { title: '出库草稿' },
         },
         {
           path: 'inventory/inbound',
