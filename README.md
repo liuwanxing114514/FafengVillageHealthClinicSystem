@@ -15,4 +15,6 @@
 - 我要用 Cursor 开始开发 → [`docs/给Agent/README.md`](docs/给Agent/README.md)
 - 版本规划和交付物 → [`docs/共用/ROADMAP.md`](docs/共用/ROADMAP.md)
 
-代码目录（开发后）：`backend/`、`frontend/`、`scripts/`（尚未创建，第一期开发时生成）。
+代码目录：`backend/`、`frontend/`、`scripts/`、`ocr-service/`、`docker-compose.yml`。
+
+**v1.4 新增**：拍照/上传进货单 OCR 识别 → 待审核入库表格 → 人工批准后写入库存。

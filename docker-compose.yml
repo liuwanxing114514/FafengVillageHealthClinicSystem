@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: clinic-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-clinic}
+      POSTGRES_USER: ${POSTGRES_USER:-clinic}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    volumes:
+      - ${CLINIC_DATA_DIR:-./clinic-data}/postgres:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-clinic} -d ${POSTGRES_DB:-clinic}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: clinic-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      CLINIC_DB_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      CLINIC_AI_ENABLED: ${CLINIC_AI_ENABLED:-false}
+      CLINIC_AI_PROVIDER: ${CLINIC_AI_PROVIDER:-noop}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      LOCAL_AI_BASE_URL: ${LOCAL_AI_BASE_URL:-http://localhost:11434}
+      CLINIC_WHISPER_URL: ${CLINIC_WHISPER_URL:-}
+      CLINIC_OCR_URL: ${CLINIC_OCR_URL:-}
+    volumes:
+      - ${CLINIC_DATA_DIR:-./clinic-data}/uploads:/app/uploads
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    build: ./frontend
+    container_name: clinic-frontend
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+
+  # v1.1 可选：docker compose --profile whisper up -d
+  whisper-service:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    container_name: clinic-whisper
+    profiles: ["whisper"]
+    environment:
+      ASR_MODEL: base
+      ASR_ENGINE: faster_whisper
+    ports:
+      - "${WHISPER_PORT:-9000}:9000"
+
+  # v1.4 可选：docker compose --profile ocr up -d
+  ocr-service:
+    build: ./ocr-service
+    container_name: clinic-ocr
+    profiles: ["ocr"]
+    ports:
+      - "${OCR_PORT:-8000}:8000"

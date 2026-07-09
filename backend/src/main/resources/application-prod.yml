@@ -1,0 +1,14 @@
+# 诊所机器部署（打包：mvn -Pprod package；敏感项可用环境变量覆盖）
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:postgresql://localhost:5432/clinic
+    username: clinic
+    password: ${CLINIC_DB_PASSWORD:change_me}
+
+clinic:
+  ai:
+    enabled: ${CLINIC_AI_ENABLED:false}
+    provider: ${CLINIC_AI_PROVIDER:noop}

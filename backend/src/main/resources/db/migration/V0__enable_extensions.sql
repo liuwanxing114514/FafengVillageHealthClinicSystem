@@ -1,0 +1,3 @@
+-- v0.1 启用 PostgreSQL 扩展（幂等）
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
