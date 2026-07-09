@@ -1,4 +1,5 @@
 import { getData, postData } from '@/api/http'
+import http from '@/api/http'
 import type { PageResult } from '@/types/medicine'
 import type {
   AdjustPayload,
@@ -56,6 +57,27 @@ export async function listFlows(params: {
   query.set('page', String(params.page ?? 1))
   query.set('size', String(params.size ?? 20))
   return getData<PageResult<FlowItem>>(`/inventory/flows?${query}`)
+}
+
+export async function exportInventoryFlows(params: {
+  medicineId?: number
+  flowType?: string
+}): Promise<void> {
+  const query = new URLSearchParams()
+  if (params.medicineId) query.set('medicineId', String(params.medicineId))
+  if (params.flowType) query.set('flowType', params.flowType)
+  const suffix = query.toString() ? `?${query}` : ''
+  const response = await http.get(`/inventory/flows/export${suffix}`, { responseType: 'blob' })
+  const blob = new Blob([response.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const date = new Date().toISOString().slice(0, 10)
+  link.href = url
+  link.download = `inventory-flows-${date}.xlsx`
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 export async function getInventoryAlerts(): Promise<InventoryAlerts> {

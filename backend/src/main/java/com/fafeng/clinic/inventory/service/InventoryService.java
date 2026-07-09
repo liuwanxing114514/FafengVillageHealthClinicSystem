@@ -18,6 +18,7 @@ import com.fafeng.clinic.inventory.dto.OutboundLineRequest;
 import com.fafeng.clinic.inventory.dto.OutboundPreviewRequest;
 import com.fafeng.clinic.inventory.entity.InventoryBatch;
 import com.fafeng.clinic.inventory.entity.InventoryFlow;
+import com.fafeng.clinic.inventory.export.InventoryFlowExcelExporter;
 import com.fafeng.clinic.inventory.mapper.InventoryBatchMapper;
 import com.fafeng.clinic.inventory.mapper.InventoryFlowMapper;
 import com.fafeng.clinic.inventory.util.InventoryUnitConverter;
@@ -66,6 +67,7 @@ public class InventoryService {
 
     private final InventoryBatchMapper batchMapper;
     private final InventoryFlowMapper flowMapper;
+    private final InventoryFlowExcelExporter flowExcelExporter;
     private final MedicineMapper medicineMapper;
     private final MedicineUnitConversionMapper conversionMapper;
     private final PrescriptionMapper prescriptionMapper;
@@ -308,6 +310,22 @@ public class InventoryService {
                 })
                 .toList();
         return new PageVO<>(records, result.getTotal(), safePage, safeSize);
+    }
+
+    public byte[] exportFlowsExcel(Long medicineId, String flowType) {
+        String normalizedType = flowType == null || flowType.isBlank() ? null : flowType.trim();
+        List<InventoryFlow> flows = flowMapper.searchForExport(
+                medicineId,
+                normalizedType,
+                InventoryFlowMapper.MAX_EXPORT_ROWS);
+        List<FlowVO> records = flows.stream()
+                .map(flow -> {
+                    Medicine medicine = medicineMapper.selectById(flow.getMedicineId());
+                    InventoryBatch batch = flow.getBatchId() == null ? null : batchMapper.selectById(flow.getBatchId());
+                    return toFlowVO(flow, medicine, batch);
+                })
+                .toList();
+        return flowExcelExporter.export(records);
     }
 
     public InventoryAlertsVO getAlerts() {

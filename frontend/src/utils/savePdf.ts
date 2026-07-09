@@ -31,3 +31,20 @@ export function buildPrescriptionPdfFilename(
   const suffix = safeDate ? `-${safeDate}` : ''
   return `处方-${safeName}${suffix}-${prescriptionId}.pdf`
 }
+
+export function buildVisitPdfFilename(visitId: number, visitDate?: string): string {
+  const safeDate = (visitDate ?? new Date().toISOString().slice(0, 10)).replace(/[/\\?%*:|"<>]/g, '-')
+  return `病历-${visitId}-${safeDate}.pdf`
+}
+
+export function formatDisplayDate(value?: string | null): string {
+  if (!value) return '—'
+  return value.replace('T', ' ').slice(0, 16)
+}
+
+export function genderLabel(gender?: string | null): string {
+  if (gender === 'M') return '男'
+  if (gender === 'F') return '女'
+  if (gender === 'UNKNOWN') return '未知'
+  return gender ?? '—'
+}
