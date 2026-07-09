@@ -29,9 +29,14 @@ services:
       CLINIC_AI_ENABLED: ${CLINIC_AI_ENABLED:-false}
       CLINIC_AI_PROVIDER: ${CLINIC_AI_PROVIDER:-noop}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
       LOCAL_AI_BASE_URL: ${LOCAL_AI_BASE_URL:-http://localhost:11434}
       CLINIC_WHISPER_URL: ${CLINIC_WHISPER_URL:-}
+      CLINIC_VOICE_UPLOAD_DIR: ${CLINIC_VOICE_UPLOAD_DIR:-uploads/audio}
+      CLINIC_VOICE_SAVE_AUDIO: ${CLINIC_VOICE_SAVE_AUDIO:-true}
       CLINIC_OCR_URL: ${CLINIC_OCR_URL:-}
+      CLINIC_OCR_UPLOAD_DIR: ${CLINIC_OCR_UPLOAD_DIR:-uploads/images}
     volumes:
       - ${CLINIC_DATA_DIR:-./clinic-data}/uploads:/app/uploads
     ports:
