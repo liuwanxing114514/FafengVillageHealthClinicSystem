@@ -80,6 +80,23 @@
 | **user-jetbrains** | IDEA 运行/编译/测试、查项目错误、重构 |
 | **user-datagrip** | 数据库连接、执行 SQL、验证 Flyway 迁移、预览表数据 |
 
+### 后端 `mvn test` 必须用 IDEA MCP
+
+本机 **Cursor 自带终端** 往往没有 `JAVA_HOME`，直接 `mvn test` 会失败。应使用 **user-jetbrains** 的 `execute_terminal_command`，在 IDEA 环境里跑测试。
+
+Agent 标准做法：
+
+1. 读 `.idea/misc.xml` 确认 `project-jdk-name`（当前为 `corretto-21` → `C:\Users\lwx\.jdks\corretto-21.0.11`）
+2. 调用 `execute_terminal_command`，`executeInShell: true`，示例：
+
+```powershell
+$env:JAVA_HOME='C:\Users\lwx\.jdks\corretto-21.0.11'; Set-Location 'D:\xiangmu\发凤村卫生室\backend'; mvn test
+```
+
+3. 失败则修代码/测试后重跑，直到全部通过
+
+**您要对模型说的话术**见 [版本任务指南.md § 自测与收尾](版本任务指南.md#自测与收尾您可以这样对模型说)。
+
 详见项目根 [`README.md`](../../README.md)「Agent / Cursor 开发提示」。
 
 ---
