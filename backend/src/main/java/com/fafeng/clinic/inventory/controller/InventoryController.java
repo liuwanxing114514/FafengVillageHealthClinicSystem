@@ -18,6 +18,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -89,6 +93,20 @@ public class InventoryController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         return Result.ok(inventoryService.listFlows(medicineId, flowType, page, size));
+    }
+
+    @Operation(summary = "导出库存流水 Excel", description = "按与列表相同的筛选条件导出，最多 10000 条")
+    @GetMapping("/flows/export")
+    public ResponseEntity<byte[]> exportFlows(
+            @RequestParam(required = false) Long medicineId,
+            @RequestParam(required = false) String flowType) {
+        byte[] body = inventoryService.exportFlowsExcel(medicineId, flowType);
+        String filename = "inventory-flows-" + LocalDate.now() + ".xlsx";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(body);
     }
 
     @Operation(summary = "库存预警", description = "库存不足与临期（3 个月内）药品")

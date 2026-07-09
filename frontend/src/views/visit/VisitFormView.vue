@@ -8,9 +8,11 @@ import { createVisit, deleteVisit, getVisit, getVisitFeeSummary, updateVisit } f
 import { getVoiceStatus, getAiStatus, getEmbeddingStatus, structureVisit } from '@/api/ai'
 import QuickPatientDialog from '@/components/visit/QuickPatientDialog.vue'
 import SimilarVisitPanel from '@/components/visit/SimilarVisitPanel.vue'
+import VisitPdfSheet from '@/components/visit/VisitPdfSheet.vue'
 import VoiceInputButton from '@/components/visit/VoiceInputButton.vue'
 import QuickPhraseChips from '@/components/visit/QuickPhraseChips.vue'
 import { useTabTitle } from '@/composables/useTabTitle'
+import { buildVisitPdfFilename, saveElementAsPdf } from '@/utils/savePdf'
 import type { PatientListItem } from '@/types/patient'
 
 const route = useRoute()
@@ -28,6 +30,10 @@ const patientOptions = ref<PatientListItem[]>([])
 const amountDueManuallyEdited = ref(false)
 const referencePurchaseCost = ref(0)
 const patientTotalArrears = ref(0)
+const patientGender = ref<string | null>(null)
+const patientAge = ref<number | null>(null)
+const savingPdf = ref(false)
+const visitPdfSheetRef = ref<HTMLElement | null>(null)
 
 const isNew = computed(() => route.params.id === 'new')
 const visitId = computed(() => (isNew.value ? null : Number(route.params.id)))
@@ -92,10 +98,16 @@ function onPatientSelected(id: number | null) {
   if (!id) {
     patientName.value = ''
     patientTotalArrears.value = 0
+    patientGender.value = null
+    patientAge.value = null
     return
   }
   const found = patientOptions.value.find((p) => p.id === id)
-  if (found) patientName.value = found.name
+  if (found) {
+    patientName.value = found.name
+    patientGender.value = found.gender
+    patientAge.value = found.age
+  }
   void loadPatientArrears(id)
 }
 
@@ -103,6 +115,8 @@ async function loadPatientArrears(id: number) {
   try {
     const patient = await getPatient(id)
     patientName.value = patient.name
+    patientGender.value = patient.gender
+    patientAge.value = patient.age
     patientTotalArrears.value = patient.totalArrears ?? 0
   } catch {
     patientTotalArrears.value = 0
@@ -260,6 +274,28 @@ async function onDelete() {
   }
 }
 
+async function onSavePdf() {
+  if (!visitId.value) {
+    ElMessage.warning('请先保存病历后再导出 PDF')
+    return
+  }
+  if (!visitPdfSheetRef.value) {
+    ElMessage.warning('PDF 内容尚未就绪')
+    return
+  }
+  savingPdf.value = true
+  try {
+    const visitDate = form.visitTime ? form.visitTime.slice(0, 10) : undefined
+    const filename = buildVisitPdfFilename(visitId.value, visitDate)
+    await saveElementAsPdf(visitPdfSheetRef.value, filename)
+    ElMessage.success('PDF 已保存到下载文件夹')
+  } catch {
+    ElMessage.error('保存 PDF 失败，请重试或使用浏览器打印另存为 PDF')
+  } finally {
+    savingPdf.value = false
+  }
+}
+
 async function onAiStructure() {
   const text = [form.chiefComplaint, form.presentIllness, form.pastHistory, form.diagnosis, form.treatment, form.remark]
     .filter((v) => v && v.trim())
@@ -317,6 +353,7 @@ onMounted(async () => {
           <div class="actions">
             <el-button @click="goBack">返回患者</el-button>
             <el-button v-if="!isNew" @click="goPrescription">开处方</el-button>
+            <el-button v-if="!isNew" :loading="savingPdf" @click="onSavePdf">保存 PDF</el-button>
             <el-button v-if="aiAvailable" :loading="structuring" @click="onAiStructure">AI 整理</el-button>
             <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
           </div>
@@ -474,6 +511,30 @@ onMounted(async () => {
     />
     </div>
     <QuickPatientDialog v-model:visible="showQuickPatient" @created="onQuickPatientCreated" />
+
+    <div v-if="!isNew" ref="visitPdfSheetRef" class="visit-pdf-host">
+      <VisitPdfSheet
+        :patient-name="patientName"
+        :patient-gender="patientGender"
+        :patient-age="patientAge"
+        :visit-time="form.visitTime"
+        :chief-complaint="form.chiefComplaint"
+        :present-illness="form.presentIllness"
+        :past-history="form.pastHistory"
+        :temperature="form.temperature"
+        :blood-pressure="form.bloodPressure"
+        :spo2="form.spo2"
+        :etco2="form.etco2"
+        :heart-rate="form.heartRate"
+        :pulse="form.pulse"
+        :allergy-history="form.allergyHistory"
+        :diagnosis="form.diagnosis"
+        :treatment="form.treatment"
+        :remark="form.remark"
+        :amount-due="form.amountDue"
+        :amount-paid="form.amountPaid"
+      />
+    </div>
   </main>
 </template>
 
@@ -496,8 +557,10 @@ onMounted(async () => {
 
 .header-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 
 .title {
@@ -507,7 +570,10 @@ onMounted(async () => {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .patient-line {
@@ -554,6 +620,19 @@ onMounted(async () => {
 
 .field-stack {
   width: 100%;
+}
+
+.visit-pdf-host {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 1100px) {
+  .page-layout {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 768px) {

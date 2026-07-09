@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,6 +11,7 @@ export default defineConfig({
   root: frontendRoot,
   plugins: [
     vue(),
+    basicSsl(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
@@ -53,6 +55,8 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,
+    https: true,
     port: 5173,
     proxy: {
       '/api': {

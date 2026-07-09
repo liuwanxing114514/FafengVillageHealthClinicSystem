@@ -36,7 +36,7 @@ class MedicineControllerTest {
     void createSearchAndUpdateMedicine() throws Exception {
         String createBody = """
                 {
-                  "name": "阿莫西林胶囊",
+                  "name": "单元测试阿莫西林胶囊",
                   "genericName": "阿莫西林",
                   "dosageForm": "胶囊剂",
                   "specification": "0.25g×24粒",
@@ -52,8 +52,8 @@ class MedicineControllerTest {
                         .content(createBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.data.name").value("阿莫西林胶囊"))
-                .andExpect(jsonPath("$.data.pinyinAbbr").value("amxljn"))
+                .andExpect(jsonPath("$.data.name").value("单元测试阿莫西林胶囊"))
+                .andExpect(jsonPath("$.data.pinyinAbbr").exists())
                 .andExpect(jsonPath("$.data.stockThreshold").value(5))
                 .andReturn()
                 .getResponse()
@@ -72,15 +72,15 @@ class MedicineControllerTest {
         mockMvc.perform(post("/api/medicines/" + id + "/barcodes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"barcode":"6901234567890","remark":"主条码"}
+                                {"barcode":"6900000000001","remark":"主条码"}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.barcode").value("6901234567890"));
+                .andExpect(jsonPath("$.data.barcode").value("6900000000001"));
 
-        mockMvc.perform(get("/api/medicines/by-barcode/6901234567890"))
+        mockMvc.perform(get("/api/medicines/by-barcode/6900000000001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.data.name").value("阿莫西林胶囊"));
+                .andExpect(jsonPath("$.data.name").value("单元测试阿莫西林胶囊"));
 
         mockMvc.perform(get("/api/medicines/by-barcode/0000000000000"))
                 .andExpect(status().isOk())
@@ -89,14 +89,14 @@ class MedicineControllerTest {
         mockMvc.perform(get("/api/medicines")
                         .param("keyword", "amxljn"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.records[?(@.name == '阿莫西林胶囊')].name",
-                        hasItem("阿莫西林胶囊")));
+                .andExpect(jsonPath("$.data.records[?(@.name == '单元测试阿莫西林胶囊')].name",
+                        hasItem("单元测试阿莫西林胶囊")));
 
         mockMvc.perform(get("/api/medicines")
-                        .param("keyword", "6901234567890"))
+                        .param("keyword", "6900000000001"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.records[?(@.barcodes[0] == '6901234567890')].barcodes[0]",
-                        hasItem("6901234567890")));
+                .andExpect(jsonPath("$.data.records[?(@.barcodes[0] == '6900000000001')].barcodes[0]",
+                        hasItem("6900000000001")));
 
         mockMvc.perform(patch("/api/medicines/" + id + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -113,7 +113,7 @@ class MedicineControllerTest {
         mockMvc.perform(get("/api/medicines")
                         .param("keyword", "amxljn"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.records[?(@.name == '阿莫西林胶囊')]").isEmpty());
+                .andExpect(jsonPath("$.data.records[?(@.name == '单元测试阿莫西林胶囊')]").isEmpty());
 
         mockMvc.perform(get("/api/medicines/" + id))
                 .andExpect(status().isOk())

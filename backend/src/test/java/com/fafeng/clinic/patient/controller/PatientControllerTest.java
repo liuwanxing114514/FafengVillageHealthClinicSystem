@@ -34,10 +34,10 @@ class PatientControllerTest {
     void createSearchAndUpdatePatient() throws Exception {
         String createBody = """
                 {
-                  "name": "李四",
+                  "name": "单元测试李四",
                   "gender": "F",
                   "birthDate": "1988-05-20",
-                  "phone": "13900001111",
+                  "phone": "13999990001",
                   "address": "发凤村一组"
                 }
                 """;
@@ -47,7 +47,7 @@ class PatientControllerTest {
                         .content(createBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.data.name").value("李四"))
+                .andExpect(jsonPath("$.data.name").value("单元测试李四"))
                 .andExpect(jsonPath("$.data.ageManual").value(false))
                 .andReturn()
                 .getResponse()
@@ -55,23 +55,23 @@ class PatientControllerTest {
 
         long id = objectMapper.readTree(createResponse).path("data").path("id").asLong();
 
-        mockMvc.perform(get("/api/patients?keyword=李四"))
+        mockMvc.perform(get("/api/patients?keyword=单元测试李四"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.records", hasSize(1)));
+                .andExpect(jsonPath("$.data.records[?(@.name == '单元测试李四')]", hasSize(1)));
 
         mockMvc.perform(put("/api/patients/" + id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "name": "李四",
+                                  "name": "单元测试李四",
                                   "gender": "F",
                                   "birthDate": "1988-05-20",
-                                  "phone": "13900002222",
+                                  "phone": "13999990002",
                                   "address": "发凤村二组"
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.phone").value("13900002222"));
+                .andExpect(jsonPath("$.data.phone").value("13999990002"));
     }
 
     @Test

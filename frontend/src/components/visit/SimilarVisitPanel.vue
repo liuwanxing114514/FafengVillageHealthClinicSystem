@@ -190,7 +190,7 @@ onBeforeUnmount(() => {
   color: #303133;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
   .similar-panel {
     width: 100%;
     position: static;

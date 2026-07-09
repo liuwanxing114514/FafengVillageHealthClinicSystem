@@ -106,6 +106,11 @@ class InventoryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.records", hasSize(greaterThanOrEqualTo(2))));
 
+        mockMvc.perform(get("/api/inventory/flows/export?medicineId=" + medicineId))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .header().string("Content-Disposition", org.hamcrest.Matchers.containsString(".xlsx")));
+
         mockMvc.perform(get("/api/dashboard/summary"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0));

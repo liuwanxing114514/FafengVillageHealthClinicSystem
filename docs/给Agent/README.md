@@ -87,11 +87,11 @@
 
 Agent 标准做法：
 
-1. 读 `.idea/misc.xml` 确认 `project-jdk-name`（当前为 `corretto-21` → `C:\Users\lwx\.jdks\corretto-21.0.11`）
+1. 读 `.idea/misc.xml` 确认 `project-jdk-name`（例如 `corretto-21` → 本机 JDK 21 安装路径）
 2. 调用 `execute_terminal_command`，`executeInShell: true`，示例：
 
 ```powershell
-$env:JAVA_HOME='C:\Users\lwx\.jdks\corretto-21.0.11'; Set-Location 'D:\xiangmu\发凤村卫生室\backend'; mvn test
+$env:JAVA_HOME='<你的 JDK 21 路径>'; Set-Location '<项目根>/backend'; mvn test
 ```
 
 3. 失败则修代码/测试后重跑，直到全部通过
