@@ -2,10 +2,13 @@ package com.fafeng.clinic.inventory.controller;
 
 import com.fafeng.clinic.common.Result;
 import com.fafeng.clinic.inventory.dto.AdjustRequest;
+import com.fafeng.clinic.inventory.dto.BatchOutboundConfirmRequest;
+import com.fafeng.clinic.inventory.dto.BatchOutboundPreviewRequest;
 import com.fafeng.clinic.inventory.dto.InboundRequest;
 import com.fafeng.clinic.inventory.dto.OutboundConfirmRequest;
 import com.fafeng.clinic.inventory.dto.OutboundPreviewRequest;
 import com.fafeng.clinic.inventory.service.InventoryService;
+import com.fafeng.clinic.inventory.vo.BatchOutboundResultVO;
 import com.fafeng.clinic.inventory.vo.BatchVO;
 import com.fafeng.clinic.inventory.vo.FlowVO;
 import com.fafeng.clinic.inventory.vo.InventoryAlertsVO;
@@ -44,6 +47,16 @@ public class InventoryController {
     @PostMapping("/outbound")
     public Result<List<FlowVO>> confirmOutbound(@Valid @RequestBody OutboundConfirmRequest request) {
         return Result.ok(inventoryService.confirmOutbound(request));
+    }
+
+    @PostMapping("/outbound/batch/preview")
+    public Result<OutboundPreviewVO> previewBatchOutbound(@Valid @RequestBody BatchOutboundPreviewRequest request) {
+        return Result.ok(inventoryService.previewBatchOutbound(request));
+    }
+
+    @PostMapping("/outbound/batch")
+    public Result<BatchOutboundResultVO> confirmBatchOutbound(@Valid @RequestBody BatchOutboundConfirmRequest request) {
+        return Result.ok(inventoryService.confirmBatchOutbound(request));
     }
 
     @PostMapping("/adjust")

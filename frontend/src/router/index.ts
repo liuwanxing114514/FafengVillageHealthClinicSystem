@@ -17,6 +17,7 @@ import PrescriptionFormView from '@/views/prescription/PrescriptionFormView.vue'
 import PrescriptionPrintView from '@/views/prescription/PrescriptionPrintView.vue'
 import InboundView from '@/views/inventory/InboundView.vue'
 import OutboundView from '@/views/inventory/OutboundView.vue'
+import BatchOutboundView from '@/views/inventory/BatchOutboundView.vue'
 import FlowListView from '@/views/inventory/FlowListView.vue'
 import AlertListView from '@/views/inventory/AlertListView.vue'
 import AiAssistantView from '@/views/ai/AiAssistantView.vue'
@@ -138,6 +139,12 @@ const router = createRouter({
           name: 'inventory-inbound',
           component: InboundView,
           meta: { title: '入库' },
+        },
+        {
+          path: 'inventory/outbound/batch',
+          name: 'inventory-batch-outbound',
+          component: BatchOutboundView,
+          meta: { title: '批量出库' },
         },
         {
           path: 'inventory/outbound',

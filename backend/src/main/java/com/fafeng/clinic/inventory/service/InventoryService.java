@@ -7,6 +7,9 @@ import com.fafeng.clinic.clinic.mapper.PrescriptionMapper;
 import com.fafeng.clinic.common.BusinessException;
 import com.fafeng.clinic.common.ErrorCode;
 import com.fafeng.clinic.inventory.dto.AdjustRequest;
+import com.fafeng.clinic.inventory.dto.BatchOutboundConfirmLineRequest;
+import com.fafeng.clinic.inventory.dto.BatchOutboundConfirmRequest;
+import com.fafeng.clinic.inventory.dto.BatchOutboundPreviewRequest;
 import com.fafeng.clinic.inventory.dto.InboundRequest;
 import com.fafeng.clinic.inventory.dto.OutboundAllocationRequest;
 import com.fafeng.clinic.inventory.dto.OutboundConfirmRequest;
@@ -18,6 +21,7 @@ import com.fafeng.clinic.inventory.mapper.InventoryBatchMapper;
 import com.fafeng.clinic.inventory.mapper.InventoryFlowMapper;
 import com.fafeng.clinic.inventory.util.InventoryUnitConverter;
 import com.fafeng.clinic.inventory.vo.BatchAllocationVO;
+import com.fafeng.clinic.inventory.vo.BatchOutboundResultVO;
 import com.fafeng.clinic.inventory.vo.BatchVO;
 import com.fafeng.clinic.inventory.vo.DashboardSummaryVO;
 import com.fafeng.clinic.inventory.vo.ExpiringAlertVO;
@@ -41,7 +45,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class InventoryService {
@@ -147,45 +153,69 @@ public class InventoryService {
         return new OutboundPreviewVO(allSufficient, lines);
     }
 
+    public OutboundPreviewVO previewBatchOutbound(BatchOutboundPreviewRequest request) {
+        validateBatchItems(request.items());
+        List<OutboundPreviewLineVO> lines = new ArrayList<>();
+        boolean allSufficient = true;
+        for (OutboundLineRequest item : request.items()) {
+            OutboundPreviewLineVO line = buildPreviewLine(item);
+            lines.add(line);
+            if (!line.sufficient()) {
+                allSufficient = false;
+            }
+        }
+        return new OutboundPreviewVO(allSufficient, lines);
+    }
+
+    @Transactional
+    public BatchOutboundResultVO confirmBatchOutbound(BatchOutboundConfirmRequest request) {
+        String reason = request.reason().trim();
+        if (reason.isEmpty()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "请填写出库原因");
+        }
+        validateBatchConfirmLines(request.lines());
+
+        List<OutboundLineRequest> previewItems = request.lines().stream()
+                .map(line -> new OutboundLineRequest(line.medicineId(), line.quantity(), line.unit()))
+                .toList();
+        OutboundPreviewVO preview = previewBatchOutbound(new BatchOutboundPreviewRequest(previewItems));
+        if (!preview.sufficient()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "部分药品库存不足，整单无法出库");
+        }
+
+        List<FlowVO> allFlows = new ArrayList<>();
+        for (BatchOutboundConfirmLineRequest line : request.lines()) {
+            Medicine medicine = requireMedicine(line.medicineId());
+            List<MedicineUnitConversion> conversions = listConversions(medicine.getId());
+            BigDecimal baseNeeded = InventoryUnitConverter.toBaseQuantity(
+                    medicine, conversions, line.quantity(), line.unit());
+            BigDecimal allocated = line.allocations().stream()
+                    .map(OutboundAllocationRequest::quantity)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (allocated.compareTo(baseNeeded) != 0) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST,
+                        "「" + medicine.getName() + "」批次分配数量与出库数量不一致");
+            }
+            allFlows.addAll(deductOutbound(medicine, line.allocations(), null, null, reason));
+        }
+
+        auditLogService.log("BATCH_OUTBOUND", "inventory_flow", null,
+                "{\"lineCount\":" + request.lines().size()
+                        + ",\"flowCount\":" + allFlows.size()
+                        + ",\"reason\":\"" + escapeJson(reason) + "\"}");
+        return new BatchOutboundResultVO(request.lines().size(), allFlows.size(), allFlows);
+    }
+
     @Transactional
     public List<FlowVO> confirmOutbound(OutboundConfirmRequest request) {
         validatePrescriptionContext(request.patientId(), request.prescriptionId());
         Medicine medicine = requireMedicine(request.medicineId());
-        List<FlowVO> flows = new ArrayList<>();
-        for (OutboundAllocationRequest allocation : request.allocations()) {
-            InventoryBatch batch = requireBatch(allocation.batchId());
-            if (!batch.getMedicineId().equals(medicine.getId())) {
-                throw new BusinessException(ErrorCode.BAD_REQUEST, "批次与药品不匹配");
-            }
-            BigDecimal deduct = allocation.quantity();
-            if (batch.getQuantity().compareTo(deduct) < 0) {
-                throw new BusinessException(ErrorCode.BAD_REQUEST,
-                        "批次「" + batch.getBatchNo() + "」库存不足");
-            }
-            BigDecimal totalBefore = getTotalStock(medicine.getId());
-            batch.setQuantity(batch.getQuantity().subtract(deduct));
-            if (batch.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
-                batch.setQuantity(BigDecimal.ZERO);
-                batch.setStatus(InventoryBatch.STATUS_DEPLETED);
-            }
-            batch.setUpdatedAt(OffsetDateTime.now());
-            batchMapper.updateById(batch);
-
-            BigDecimal totalAfter = totalBefore.subtract(deduct);
-            InventoryFlow flow = insertFlow(
-                    medicine,
-                    batch.getId(),
-                    InventoryFlow.TYPE_OUTBOUND,
-                    deduct.negate(),
-                    totalBefore,
-                    totalAfter,
-                    medicine.getBaseUnit(),
-                    request.patientId(),
-                    request.prescriptionId(),
-                    null,
-                    null);
-            flows.add(toFlowVO(flow, medicine, batch));
-        }
+        List<FlowVO> flows = deductOutbound(
+                medicine,
+                request.allocations(),
+                request.patientId(),
+                request.prescriptionId(),
+                null);
         auditLogService.log("OUTBOUND", "prescription", request.prescriptionId(),
                 "{\"medicineId\":" + medicine.getId() + "}");
         return flows;
@@ -329,6 +359,70 @@ public class InventoryService {
             remaining = remaining.subtract(take);
         }
         return allocations;
+    }
+
+    private List<FlowVO> deductOutbound(Medicine medicine,
+                                        List<OutboundAllocationRequest> allocations,
+                                        Long patientId,
+                                        Long prescriptionId,
+                                        String reason) {
+        List<FlowVO> flows = new ArrayList<>();
+        for (OutboundAllocationRequest allocation : allocations) {
+            InventoryBatch batch = requireBatch(allocation.batchId());
+            if (!batch.getMedicineId().equals(medicine.getId())) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "批次与药品不匹配");
+            }
+            BigDecimal deduct = allocation.quantity();
+            if (deduct.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "出库数量必须大于 0");
+            }
+            if (batch.getQuantity().compareTo(deduct) < 0) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST,
+                        "批次「" + batch.getBatchNo() + "」库存不足");
+            }
+            BigDecimal totalBefore = getTotalStock(medicine.getId());
+            batch.setQuantity(batch.getQuantity().subtract(deduct));
+            if (batch.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                batch.setQuantity(BigDecimal.ZERO);
+                batch.setStatus(InventoryBatch.STATUS_DEPLETED);
+            }
+            batch.setUpdatedAt(OffsetDateTime.now());
+            batchMapper.updateById(batch);
+
+            BigDecimal totalAfter = totalBefore.subtract(deduct);
+            InventoryFlow flow = insertFlow(
+                    medicine,
+                    batch.getId(),
+                    InventoryFlow.TYPE_OUTBOUND,
+                    deduct.negate(),
+                    totalBefore,
+                    totalAfter,
+                    medicine.getBaseUnit(),
+                    patientId,
+                    prescriptionId,
+                    reason,
+                    null);
+            flows.add(toFlowVO(flow, medicine, batch));
+        }
+        return flows;
+    }
+
+    private void validateBatchItems(List<OutboundLineRequest> items) {
+        Set<Long> medicineIds = new HashSet<>();
+        for (OutboundLineRequest item : items) {
+            if (!medicineIds.add(item.medicineId())) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "同一药品请勿重复添加，请合并数量");
+            }
+        }
+    }
+
+    private void validateBatchConfirmLines(List<BatchOutboundConfirmLineRequest> lines) {
+        Set<Long> medicineIds = new HashSet<>();
+        for (BatchOutboundConfirmLineRequest line : lines) {
+            if (!medicineIds.add(line.medicineId())) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "同一药品请勿重复添加，请合并数量");
+            }
+        }
     }
 
     private void validatePrescriptionContext(Long patientId, Long prescriptionId) {

@@ -11,6 +11,7 @@ export const MENU_ITEMS: MenuItem[] = [
   { path: '/medicine', title: '药品', icon: 'FirstAidKit' },
   { path: '/inventory/inbound', title: '入库', icon: 'Download' },
   { path: '/inventory/outbound', title: '出库', icon: 'Upload' },
+  { path: '/inventory/outbound/batch', title: '批量出库', icon: 'Operation' },
   { path: '/inventory/flows', title: '库存流水', icon: 'List' },
   { path: '/inventory/alerts', title: '库存预警', icon: 'Warning' },
   { path: '/ai', title: 'AI 助手', icon: 'ChatDotRound' },
