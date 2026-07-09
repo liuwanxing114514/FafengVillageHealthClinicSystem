@@ -15,21 +15,25 @@
 
 ---
 
-## 2. AiProvider 接口（v0.9 定义）
+## 2. AiProvider 与 Spring AI（v0.9 / v2.0.2）
 
-待 v0.9 实现时补充：
+`AiProvider` 接口保留，供业务层按 `noop` / `deepseek` / `local` 切换。v2.0.2 起 DeepSeek 实装走 **Spring AI** `ChatClient`（OpenAI 兼容 `base-url`），不再使用自研 HTTP 客户端。
 
-- 聊天补全
-- 结构化 JSON 抽取
-- 文本向量化（v2.2）
+| 能力 | 接口 / 实现 | 版本 |
+| --- | --- | --- |
+| 聊天补全 | `AiProvider.chatCompletion` → `AiChatClient` → `ChatClient` | v1.3 / v2.0.2 |
+| 结构化 JSON 抽取 | 同上（提示词约束 JSON 输出） | v1.3 |
+| Agent 工具调用 | `@Tool` + `ClinicAgentTools` + `ChatClient.tools()` | v2.0.2 |
+| 文本向量化 | 待 v2.2 | v2.2 |
 
 实现类：
 
 | 类 | 版本 | 说明 |
 | --- | --- | --- |
 | `NoopAiProvider` | v0.9 | 默认，空实现 |
-| `DeepSeekAiProvider` | v1.3 | DeepSeek API |
+| `DeepSeekAiProvider` | v1.3 / v2.0.2 | 委托 `SpringAiChatClient` |
 | `LocalAiProvider` | 远期 | Ollama / 本地模型 |
+| `UnconfiguredAiChatClient` | v2.0.2 | AI 未启用时的占位 |
 
 ---
 
@@ -103,36 +107,42 @@
 
 | 服务 | 版本 | 部署 |
 | --- | --- | --- |
-| DeepSeek API | v1.3 | 后端 HTTP 调用，无独立容器 |
+| DeepSeek API | v1.3 / v2.0.2 | Spring AI `ChatClient`（OpenAI 兼容），无独立容器 |
 | Whisper | v1.1 | `whisper-service` 容器 |
 | PaddleOCR | v1.4 | `ocr-service` 容器 |
 | pgvector | v2.2 | PostgreSQL 扩展 |
 
 ---
 
-## 6. Agent 工具（v2.0 实装）
+## 6. Agent 工具（v2.0 实装，v2.0.2 Spring AI 化）
 
-Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → DeepSeek 输出 JSON 工具计划 → 白名单工具执行 → 结果摘要。
+Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → Spring AI `ChatClient` + `@Tool` 自动工具调用 → 结果摘要。
 
 ### 6.1 受控工具
 
-| 工具 | 说明 | 写库 |
-| --- | --- | --- |
-| `searchMedicine` | 按名称/条码查药品 | 只读 |
-| `queryInventory` | 查库存数量、批次 | 只读 |
-| `queryExpiringMedicine` | 查临期药品（3 个月内） | 只读 |
-| `searchPatient` | 查患者（返回脱敏） | 只读 |
-| `searchPatientVisit` | 查历史病历 | 只读 |
-| `generateOutboundDraft` | 生成待确认出库清单 | 写 `ai_draft`（OUTBOUND） |
+| 工具 | 说明 | 写库 | 注册方式 |
+| --- | --- | --- | --- |
+| `searchMedicine` | 按名称/条码查药品 | 只读 | `ClinicAgentTools.@Tool` |
+| `queryInventory` | 查库存数量、批次 | 只读 | 同上 |
+| `queryExpiringMedicine` | 查临期药品（3 个月内） | 只读 | 同上 |
+| `searchPatient` | 查患者（返回脱敏） | 只读 | 同上 |
+| `searchPatientVisit` | 查历史病历 | 只读 | 同上 |
+| `generateOutboundDraft` | 生成待确认出库清单 | 写 `ai_draft`（OUTBOUND） | 同上 |
+
+业务逻辑仍由 `AgentToolRegistry` + 6 个 `AgentTool` 实现类承载；`ClinicAgentTools` 仅作 Spring AI 工具注册层。
+
+### 6.2 脱敏 Advisor
+
+`DesensitizationAdvisor`（`BaseAdvisor`）在 `ChatClient` 链中对用户消息执行 `Desensitizer` 规则，服务层调用前也会脱敏（双保险）。
 
 禁止：直接 UPDATE 库存/病历、任意 SQL、未注册工具。
 
-### 6.2 API
+### 6.3 API
 
 - `POST /api/agent/chat` — 自然语言查询
 - `GET /api/agent/logs` — 执行日志（`agent_execution_log` 表）
 
-### 6.3 前端
+### 6.4 前端
 
 - `AiAssistantView`：对话、工具调用时间线、待确认出库卡片
 - `OutboundDraftView`：查看 OUTBOUND 草稿（批准出库在 v2.1）
@@ -165,4 +175,5 @@ CLINIC_OCR_URL=
 | v1.3 | DeepSeek、Desensitizer、VISIT 草稿确认 |
 | v1.4 | PaddleOCR 容器、OCR 入库 INBOUND 草稿、批准入库 |
 | v2.0 | Agent 6 工具、AgentOrchestrator、agent_execution_log、AI 助手页 |
+| v2.0.2 | Spring AI：ChatClient 替换 HttpDeepSeekClient；@Tool 替换 JSON 编排；DesensitizationAdvisor |
 | v2.2 | 待填：向量化 pipeline |

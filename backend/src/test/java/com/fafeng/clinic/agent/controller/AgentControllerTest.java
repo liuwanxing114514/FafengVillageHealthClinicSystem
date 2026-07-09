@@ -1,6 +1,7 @@
 package com.fafeng.clinic.agent.controller;
 
-import com.fafeng.clinic.ai.client.DeepSeekClient;
+import com.fafeng.clinic.agent.tool.ClinicAgentTools;
+import com.fafeng.clinic.ai.client.AiChatClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -12,6 +13,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -33,19 +35,20 @@ class AgentControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private DeepSeekClient deepSeekClient;
+    private AiChatClient aiChatClient;
 
     @Test
     @WithMockUser(username = "admin")
     void chatWithToolCallAndFinalAnswer() throws Exception {
-        when(deepSeekClient.isConfigured()).thenReturn(true);
-        when(deepSeekClient.chatCompletion(anyString(), anyString()))
-                .thenReturn("""
-                        {"action":"call_tool","tool":"queryExpiringMedicine","args":{}}
-                        """)
-                .thenReturn("""
-                        {"action":"final_answer","answer":"当前有 2 种药品即将过期，请关注临期预警页。"}
-                        """);
+        when(aiChatClient.isConfigured()).thenReturn(true);
+        when(aiChatClient.chatWithTools(anyString(), anyString(), any()))
+                .thenAnswer(invocation -> {
+                    Object tools = invocation.getArgument(2);
+                    if (tools instanceof ClinicAgentTools agentTools) {
+                        agentTools.queryExpiringMedicine();
+                    }
+                    return "当前有 2 种药品即将过期，请关注临期预警页。";
+                });
 
         mockMvc.perform(post("/api/agent/chat")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -62,9 +65,9 @@ class AgentControllerTest {
     @Test
     @WithMockUser(username = "admin")
     void listRecentLogs() throws Exception {
-        when(deepSeekClient.isConfigured()).thenReturn(true);
-        when(deepSeekClient.chatCompletion(anyString(), anyString()))
-                .thenReturn("{\"action\":\"final_answer\",\"answer\":\"暂无临期药品\"}");
+        when(aiChatClient.isConfigured()).thenReturn(true);
+        when(aiChatClient.chatWithTools(anyString(), anyString(), any()))
+                .thenReturn("暂无临期药品");
 
         mockMvc.perform(post("/api/agent/chat")
                         .contentType(MediaType.APPLICATION_JSON)

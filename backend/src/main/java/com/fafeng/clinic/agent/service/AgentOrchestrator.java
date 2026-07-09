@@ -1,52 +1,41 @@
 package com.fafeng.clinic.agent.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fafeng.clinic.agent.dto.AgentChatRequest;
-import com.fafeng.clinic.agent.tool.AgentToolRegistry;
-import com.fafeng.clinic.agent.tool.AgentToolResult;
+import com.fafeng.clinic.agent.tool.ClinicAgentTools;
 import com.fafeng.clinic.agent.vo.AgentChatResponseVO;
 import com.fafeng.clinic.agent.vo.AgentToolCallVO;
 import com.fafeng.clinic.agent.vo.PendingActionVO;
+import com.fafeng.clinic.ai.client.AiChatClient;
 import com.fafeng.clinic.ai.config.ClinicAiProperties;
 import com.fafeng.clinic.ai.entity.AiDraft;
-import com.fafeng.clinic.ai.provider.AiProvider;
-import com.fafeng.clinic.ai.service.AiJsonParser;
 import com.fafeng.clinic.ai.util.Desensitizer;
 import com.fafeng.clinic.common.BusinessException;
 import com.fafeng.clinic.common.ErrorCode;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Agent 编排：用户消息脱敏 → Spring AI {@code ChatClient} + {@code @Tool} → 结果摘要与待确认卡片。
+ */
 @Service
+@RequiredArgsConstructor
 public class AgentOrchestrator {
 
     private final ClinicAiProperties properties;
-    private final AiProvider activeAiProvider;
-    private final AgentToolRegistry toolRegistry;
+    private final AiChatClient aiChatClient;
+    private final ClinicAgentTools clinicAgentTools;
+    private final AgentToolCallContext callContext;
     private final AgentExecutionLogService executionLogService;
-    private final ObjectMapper objectMapper;
-
-    public AgentOrchestrator(ClinicAiProperties properties,
-                             AiProvider activeAiProvider,
-                             AgentToolRegistry toolRegistry,
-                             AgentExecutionLogService executionLogService,
-                             ObjectMapper objectMapper) {
-        this.properties = properties;
-        this.activeAiProvider = activeAiProvider;
-        this.toolRegistry = toolRegistry;
-        this.executionLogService = executionLogService;
-        this.objectMapper = objectMapper;
-    }
 
     public AgentChatResponseVO chat(AgentChatRequest request) {
         if (!properties.isEnabled()) {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 功能未启用");
         }
-        if (!activeAiProvider.isAvailable()) {
+        if (!aiChatClient.isConfigured()) {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 服务不可用，请检查配置");
         }
 
@@ -56,92 +45,50 @@ public class AgentOrchestrator {
         String userMessage = request.message().trim();
         String desensitizedMessage = Desensitizer.desensitizeText(userMessage, Desensitizer.PatientContext.empty());
 
-        List<AgentToolCallVO> toolCalls = new ArrayList<>();
-        List<PendingActionVO> pendingActions = new ArrayList<>();
-        StringBuilder context = new StringBuilder();
-        context.append("用户问题：").append(desensitizedMessage).append('\n');
+        callContext.activate();
+        try {
+            String answer = aiChatClient.chatWithTools(
+                    buildSystemPrompt(),
+                    desensitizedMessage,
+                    clinicAgentTools);
 
-        String answer = null;
-        int maxRounds = properties.getAgentMaxRounds();
-
-        for (int round = 0; round < maxRounds; round++) {
-            String systemPrompt = buildSystemPrompt();
-            String userPrompt = context + "\n请决定下一步：调用工具或给出最终回答。";
-            String llmResponse = activeAiProvider.chatCompletion(systemPrompt, userPrompt);
-            JsonNode plan = AiJsonParser.parseJsonContent(objectMapper, llmResponse);
-
-            String action = plan.path("action").asText("");
-            if ("final_answer".equals(action) || plan.has("answer")) {
-                answer = plan.path("answer").asText("");
-                if (answer.isBlank()) {
-                    answer = llmResponse;
-                }
-                break;
-            }
-
-            if (!"call_tool".equals(action)) {
-                answer = plan.path("answer").asText(llmResponse);
-                break;
-            }
-
-            String toolName = plan.path("tool").asText("");
-            JsonNode args = plan.path("args");
-            String argsSummary = summarizeArgs(args);
-
-            long start = System.currentTimeMillis();
-            AgentToolResult result;
-            try {
-                result = toolRegistry.execute(toolName, args);
-            } catch (BusinessException ex) {
-                result = AgentToolResult.fail(ex.getMessage());
-            }
-            long duration = System.currentTimeMillis() - start;
-
-            executionLogService.log(sessionId, toolName, argsSummary, result.summary(), duration);
-            toolCalls.add(new AgentToolCallVO(toolName, argsSummary, result.summary(), duration, result.success()));
-
-            if (result.pendingDraftId() != null) {
-                pendingActions.add(new PendingActionVO(
-                        result.pendingDraftId(),
-                        AiDraft.TYPE_OUTBOUND,
-                        result.summary()));
-            }
-
-            context.append("\n工具 ").append(toolName).append(" 结果：").append(result.summary());
-            if (result.data() != null) {
-                try {
-                    context.append("\n数据：").append(objectMapper.writeValueAsString(result.data()));
-                } catch (Exception ignored) {
-                    // skip serialization error in context
+            List<AgentToolCallVO> toolCalls = new ArrayList<>();
+            List<PendingActionVO> pendingActions = new ArrayList<>();
+            for (AgentToolCallContext.ToolCallRecord record : callContext.getRecords()) {
+                executionLogService.log(
+                        sessionId,
+                        record.toolName(),
+                        record.argsSummary(),
+                        record.resultSummary(),
+                        record.durationMs());
+                toolCalls.add(new AgentToolCallVO(
+                        record.toolName(),
+                        record.argsSummary(),
+                        record.resultSummary(),
+                        record.durationMs(),
+                        record.success()));
+                if (record.pendingDraftId() != null) {
+                    pendingActions.add(new PendingActionVO(
+                            record.pendingDraftId(),
+                            AiDraft.TYPE_OUTBOUND,
+                            record.resultSummary()));
                 }
             }
 
-            if (round == maxRounds - 1) {
+            if (answer == null || answer.isBlank()) {
                 answer = summarizeFromToolCalls(toolCalls, userMessage);
             }
+            if (answer.isBlank()) {
+                answer = "抱歉，暂时无法完成该查询，请换个方式提问或手动操作。";
+            }
+            return new AgentChatResponseVO(sessionId, answer, toolCalls, pendingActions);
+        } finally {
+            callContext.clear();
         }
-
-        if (answer == null || answer.isBlank()) {
-            answer = "抱歉，暂时无法完成该查询，请换个方式提问或手动操作。";
-        }
-
-        return new AgentChatResponseVO(sessionId, answer, toolCalls, pendingActions);
     }
 
     private String buildSystemPrompt() {
-        return properties.getAgentSystemPrompt().replace("{{TOOLS}}", toolRegistry.buildToolCatalog());
-    }
-
-    private String summarizeArgs(JsonNode args) {
-        if (args == null || args.isNull() || args.isEmpty()) {
-            return "{}";
-        }
-        try {
-            String json = objectMapper.writeValueAsString(args);
-            return json.length() > 500 ? json.substring(0, 500) : json;
-        } catch (Exception ex) {
-            return args.toString();
-        }
+        return properties.getAgentSystemPrompt();
     }
 
     private String summarizeFromToolCalls(List<AgentToolCallVO> toolCalls, String question) {

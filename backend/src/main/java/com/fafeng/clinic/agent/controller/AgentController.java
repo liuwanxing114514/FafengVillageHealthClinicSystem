@@ -7,6 +7,7 @@ import com.fafeng.clinic.agent.vo.AgentChatResponseVO;
 import com.fafeng.clinic.agent.vo.AgentExecutionLogVO;
 import com.fafeng.clinic.common.Result;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,15 +19,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/agent")
+@RequiredArgsConstructor
 public class AgentController {
 
     private final AgentOrchestrator orchestrator;
     private final AgentExecutionLogService executionLogService;
-
-    public AgentController(AgentOrchestrator orchestrator, AgentExecutionLogService executionLogService) {
-        this.orchestrator = orchestrator;
-        this.executionLogService = executionLogService;
-    }
 
     @PostMapping("/chat")
     public Result<AgentChatResponseVO> chat(@Valid @RequestBody AgentChatRequest request) {
