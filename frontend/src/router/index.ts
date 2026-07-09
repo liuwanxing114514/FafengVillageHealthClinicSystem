@@ -12,6 +12,7 @@ import MedicineEditView from '@/views/medicine/MedicineEditView.vue'
 import MedicineImportView from '@/views/medicine/MedicineImportView.vue'
 import PatientListView from '@/views/patient/PatientListView.vue'
 import PatientDetailView from '@/views/patient/PatientDetailView.vue'
+import VisitListView from '@/views/visit/VisitListView.vue'
 import VisitFormView from '@/views/visit/VisitFormView.vue'
 import PrescriptionFormView from '@/views/prescription/PrescriptionFormView.vue'
 import PrescriptionPrintView from '@/views/prescription/PrescriptionPrintView.vue'
@@ -97,6 +98,12 @@ const router = createRouter({
           name: 'patient-detail',
           component: PatientDetailView,
           meta: { title: '患者' },
+        },
+        {
+          path: 'visit',
+          name: 'visit-list',
+          component: VisitListView,
+          meta: { title: '病历' },
         },
         {
           path: 'visit/:id',

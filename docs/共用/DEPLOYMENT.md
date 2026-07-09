@@ -63,8 +63,10 @@ docker compose up -d --build
 ### 自动备份
 
 - 脚本：`D:\clinic\scripts\backup.ps1`（项目根目录执行 `.\scripts\backup.ps1`）
+- **触发方式**：脚本本身不会自启动；需在 **Windows 任务计划** 中配置每日执行（建议凌晨 3:00）
 - 建议时间：每日凌晨 3:00
-- 保留：最近 7 天（`-KeepDays` 可调）
+- 保留：最近 **7 天**（参数 `-KeepDays`，例如 `.\scripts\backup.ps1 -KeepDays 14`）
+- **过期清理**：每次执行备份脚本时，自动删除 `backup\` 下超过 `KeepDays` 的 `clinic-backup-*.zip`
 - 输出目录：`D:\clinic-data\backup\`（zip 包，内含 `postgres.sql`、uploads、`.env`）
 
 ### 备份内容
@@ -145,7 +147,7 @@ docker compose logs backend | Select-String -Pattern "Flyway"
 | **v1.3** | `.env` 填 `DEEPSEEK_API_KEY`，设 `clinic.ai.provider=deepseek` | 设 `noop` 或 `enabled=false` 时不影响 |
 | **v1.4** | 添加 `ocr-service` 容器；`.env` 配置 OCR 地址 | 是，不影响 |
 | **v1.5** | 仅程序更新 | — |
-| **v1.6** | 需纸质处方样本；可能增加模板配置 | — |
+| **v1.6** | Flyway V11（病历收费字段、打印模板配置）；需纸质处方样本 | — |
 | **v2.0** | 依赖 v1.3；实装 AI 助手页 | 关闭 AI 时不影响 |
 | **v2.1** | 仅程序更新 | — |
 | **v2.2** | 直接建 visit_embedding 表（扩展 v0.1 已装） | 是，不影响 |

@@ -2,6 +2,7 @@ package com.fafeng.clinic.patient.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fafeng.clinic.clinic.mapper.ClinicVisitMapper;
 import com.fafeng.clinic.common.BusinessException;
 import com.fafeng.clinic.common.ErrorCode;
 import com.fafeng.clinic.common.IdCardUtils;
@@ -16,6 +17,8 @@ import com.fafeng.clinic.system.service.AuditLogService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -24,10 +27,14 @@ import java.util.List;
 public class PatientService {
 
     private final PatientMapper patientMapper;
+    private final ClinicVisitMapper visitMapper;
     private final AuditLogService auditLogService;
 
-    public PatientService(PatientMapper patientMapper, AuditLogService auditLogService) {
+    public PatientService(PatientMapper patientMapper,
+                          ClinicVisitMapper visitMapper,
+                          AuditLogService auditLogService) {
         this.patientMapper = patientMapper;
+        this.visitMapper = visitMapper;
         this.auditLogService = auditLogService;
     }
 
@@ -198,9 +205,18 @@ public class PatientService {
                 patient.getPhone(),
                 patient.getAddress(),
                 patient.getRemark(),
+                resolveTotalArrears(patient.getId()),
                 patient.getStatus(),
                 patient.getCreatedAt(),
                 patient.getUpdatedAt());
+    }
+
+    private BigDecimal resolveTotalArrears(Long patientId) {
+        BigDecimal sum = visitMapper.sumArrearsByPatientId(patientId);
+        if (sum == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return sum.setScale(2, RoundingMode.HALF_UP);
     }
 
     private String trimToEmpty(String value) {

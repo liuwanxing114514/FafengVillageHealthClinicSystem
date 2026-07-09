@@ -1,5 +1,6 @@
 package com.fafeng.clinic.clinic.dto;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -21,6 +22,8 @@ public record SaveVisitRequest(
         String allergyHistory,
         String diagnosis,
         String treatment,
-        String remark
+        String remark,
+        @DecimalMin("0") BigDecimal amountDue,
+        @DecimalMin("0") BigDecimal amountPaid
 ) {
 }

@@ -8,6 +8,7 @@ export interface MenuItem {
 export const MENU_ITEMS: MenuItem[] = [
   { path: '/', title: '首页', icon: 'HomeFilled' },
   { path: '/patient', title: '患者', icon: 'User' },
+  { path: '/visit', title: '病历', icon: 'Document' },
   { path: '/medicine', title: '药品', icon: 'FirstAidKit' },
   { path: '/inventory/inbound', title: '入库', icon: 'Download' },
   { path: '/inventory/outbound', title: '出库', icon: 'Upload' },

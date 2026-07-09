@@ -36,9 +36,38 @@ export interface SavePrescriptionPayload {
   }>
 }
 
+export interface PrescriptionPrintField {
+  key: string
+  topMm: number
+  leftMm: number
+  fontSizePt: number
+}
+
+export interface PrescriptionPrintTemplate {
+  type: 'full-page' | 'overlay'
+  title?: string
+  fields?: PrescriptionPrintField[]
+  staticValues?: Record<string, string>
+  itemsArea?: {
+    topMm: number
+    leftMm: number
+    lineHeightMm: number
+    fontSizePt: number
+    rpLabel?: string
+  }
+}
+
+export interface PrescriptionPrintConfig {
+  templates: Record<string, PrescriptionPrintTemplate>
+}
+
 export interface PrescriptionPrintData {
   clinicName: string
   title: string
+  activeTemplate: string
+  templateConfigJson: string
+  visitRecordNo: number
+  department: string
   patientName: string
   gender: string
   age?: number
@@ -46,6 +75,9 @@ export interface PrescriptionPrintData {
   phone: string
   diagnosis?: string
   prescriptionDate: string
+  prescriptionYear?: number
+  prescriptionMonth?: number
+  prescriptionDay?: number
   items: PrescriptionItem[]
   doctorSignatureLabel: string
 }

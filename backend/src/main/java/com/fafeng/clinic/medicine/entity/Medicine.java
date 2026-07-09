@@ -24,6 +24,7 @@ public class Medicine {
     private String packageUnit;
     private String manufacturer;
     private BigDecimal purchasePrice;
+    private BigDecimal suggestedRetailPrice;
     private BigDecimal stockThreshold;
     private String pinyinAbbr;
     private String remark;
@@ -101,6 +102,14 @@ public class Medicine {
 
     public void setPurchasePrice(BigDecimal purchasePrice) {
         this.purchasePrice = purchasePrice;
+    }
+
+    public BigDecimal getSuggestedRetailPrice() {
+        return suggestedRetailPrice;
+    }
+
+    public void setSuggestedRetailPrice(BigDecimal suggestedRetailPrice) {
+        this.suggestedRetailPrice = suggestedRetailPrice;
     }
 
     public BigDecimal getStockThreshold() {

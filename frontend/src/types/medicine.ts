@@ -8,6 +8,7 @@ export interface MedicineListItem {
   packageUnit: string
   manufacturer: string
   purchasePrice: number
+  suggestedRetailPrice: number
   stockThreshold: number
   stockThresholdInPackages: number
   status: 'ACTIVE' | 'INACTIVE'
@@ -24,6 +25,7 @@ export interface MedicineDetail {
   packageUnit: string
   manufacturer: string
   purchasePrice: number
+  suggestedRetailPrice: number
   stockThreshold: number
   stockThresholdInPackages: number
   status: 'ACTIVE' | 'INACTIVE'
@@ -64,6 +66,7 @@ export interface SaveMedicinePayload {
   packageUnit?: string
   manufacturer?: string
   purchasePrice: number
+  suggestedRetailPrice?: number
   stockThreshold?: number | null
   remark?: string
 }

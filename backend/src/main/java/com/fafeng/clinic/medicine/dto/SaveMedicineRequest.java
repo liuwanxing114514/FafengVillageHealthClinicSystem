@@ -16,6 +16,7 @@ public record SaveMedicineRequest(
         @Size(max = 16) String packageUnit,
         @Size(max = 128) String manufacturer,
         @NotNull @DecimalMin("0") BigDecimal purchasePrice,
+        @DecimalMin("0") BigDecimal suggestedRetailPrice,
         @DecimalMin("0") BigDecimal stockThreshold,
         String remark
 ) {

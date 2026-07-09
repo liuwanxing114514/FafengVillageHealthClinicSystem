@@ -226,6 +226,7 @@ public class MedicineImportService {
                 row.getPackageUnit(),
                 row.getManufacturer(),
                 row.getPurchasePrice(),
+                row.getSuggestedRetailPrice() == null ? BigDecimal.ZERO : row.getSuggestedRetailPrice(),
                 row.getStockThreshold(),
                 row.getRemark()
         );
@@ -246,6 +247,7 @@ public class MedicineImportService {
                 row.getManufacturer(),
                 row.getBarcode(),
                 row.getPurchasePrice(),
+                row.getSuggestedRetailPrice(),
                 row.getStockThreshold(),
                 row.getBatchNo(),
                 row.getExpiryDate(),

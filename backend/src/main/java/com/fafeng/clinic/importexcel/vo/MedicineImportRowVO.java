@@ -18,6 +18,7 @@ public record MedicineImportRowVO(
         String manufacturer,
         String barcode,
         BigDecimal purchasePrice,
+        BigDecimal suggestedRetailPrice,
         BigDecimal stockThreshold,
         String batchNo,
         LocalDate expiryDate,

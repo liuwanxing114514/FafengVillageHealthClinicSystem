@@ -17,10 +17,24 @@ const pwdForm = reactive({
   confirmPassword: '',
 })
 const clinicName = ref('')
+const printTemplate = ref('default-a4')
 
 async function loadSettings() {
   settings.value = await fetchSettings()
   clinicName.value = settings.value.find((s) => s.key === 'clinic_name')?.value ?? ''
+  printTemplate.value =
+    settings.value.find((s) => s.key === 'prescription_print_active_template')?.value ?? 'default-a4'
+}
+
+async function onSavePrintTemplate() {
+  loading.value = true
+  try {
+    await updateSetting('prescription_print_active_template', printTemplate.value)
+    ElMessage.success('处方打印模板已保存')
+    await loadSettings()
+  } finally {
+    loading.value = false
+  }
 }
 
 async function onChangePassword() {
@@ -92,6 +106,21 @@ onMounted(loadSettings)
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="loading" native-type="submit">保存设置</el-button>
+        </el-form-item>
+      </el-form>
+
+      <el-divider />
+
+      <h3 class="section">处方打印</h3>
+      <el-form label-width="120px" @submit.prevent="onSavePrintTemplate">
+        <el-form-item label="打印模板">
+          <el-select v-model="printTemplate" style="width: 100%">
+            <el-option label="A4 通用模板（默认）" value="default-a4" />
+            <el-option label="预印纸对齐（仅打印数据）" value="preprinted-fafeng" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="loading" native-type="submit">保存打印模板</el-button>
         </el-form-item>
       </el-form>
 

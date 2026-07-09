@@ -19,6 +19,7 @@ public class MedicineImportParsedRow {
     private String manufacturer = "";
     private String barcode = "";
     private BigDecimal purchasePrice;
+    private BigDecimal suggestedRetailPrice;
     private BigDecimal stockThreshold;
     private String batchNo = "";
     private LocalDate expiryDate;
@@ -121,6 +122,14 @@ public class MedicineImportParsedRow {
 
     public void setPurchasePrice(BigDecimal purchasePrice) {
         this.purchasePrice = purchasePrice;
+    }
+
+    public BigDecimal getSuggestedRetailPrice() {
+        return suggestedRetailPrice;
+    }
+
+    public void setSuggestedRetailPrice(BigDecimal suggestedRetailPrice) {
+        this.suggestedRetailPrice = suggestedRetailPrice;
     }
 
     public BigDecimal getStockThreshold() {

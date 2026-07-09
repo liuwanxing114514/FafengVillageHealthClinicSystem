@@ -30,6 +30,8 @@ public class ClinicVisit {
     private String diagnosis;
     private String treatment;
     private String remark;
+    private BigDecimal amountDue;
+    private BigDecimal amountPaid;
     private String status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -160,6 +162,22 @@ public class ClinicVisit {
 
     public void setRemark(String remark) {
         this.remark = remark;
+    }
+
+    public BigDecimal getAmountDue() {
+        return amountDue;
+    }
+
+    public void setAmountDue(BigDecimal amountDue) {
+        this.amountDue = amountDue;
+    }
+
+    public BigDecimal getAmountPaid() {
+        return amountPaid;
+    }
+
+    public void setAmountPaid(BigDecimal amountPaid) {
+        this.amountPaid = amountPaid;
     }
 
     public String getStatus() {

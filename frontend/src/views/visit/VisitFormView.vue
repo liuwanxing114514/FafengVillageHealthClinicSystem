@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onActivated, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getPatient } from '@/api/patient'
-import { createVisit, deleteVisit, getVisit, updateVisit } from '@/api/visit'
+import { getPatient, searchPatients } from '@/api/patient'
+import { listPrescriptionsByVisit } from '@/api/prescription'
+import { createVisit, deleteVisit, getVisit, getVisitFeeSummary, updateVisit } from '@/api/visit'
 import { getVoiceStatus, getAiStatus, structureVisit } from '@/api/ai'
+import QuickPatientDialog from '@/components/visit/QuickPatientDialog.vue'
 import VoiceInputButton from '@/components/visit/VoiceInputButton.vue'
 import QuickPhraseChips from '@/components/visit/QuickPhraseChips.vue'
 import { useTabTitle } from '@/composables/useTabTitle'
+import type { PatientListItem } from '@/types/patient'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,6 +20,12 @@ const patientName = ref('')
 const voiceAvailable = ref(false)
 const aiAvailable = ref(false)
 const structuring = ref(false)
+const showQuickPatient = ref(false)
+const patientSearching = ref(false)
+const patientOptions = ref<PatientListItem[]>([])
+const amountDueManuallyEdited = ref(false)
+const referencePurchaseCost = ref(0)
+const patientTotalArrears = ref(0)
 
 const isNew = computed(() => route.params.id === 'new')
 const visitId = computed(() => (isNew.value ? null : Number(route.params.id)))
@@ -44,6 +53,8 @@ const form = reactive({
   diagnosis: '',
   treatment: '',
   remark: '',
+  amountDue: 0 as number | null,
+  amountPaid: 0 as number | null,
 })
 
 useTabTitle(computed(() => {
@@ -61,20 +72,80 @@ function formatDateTimeLocal(value: string) {
   return match?.[1] ?? normalized.slice(0, 16)
 }
 
+async function searchPatientOptions(keyword: string) {
+  if (!keyword.trim()) {
+    patientOptions.value = []
+    return
+  }
+  patientSearching.value = true
+  try {
+    const result = await searchPatients({ keyword: keyword.trim(), page: 1, size: 20 })
+    patientOptions.value = result.records
+  } finally {
+    patientSearching.value = false
+  }
+}
+
+function onPatientSelected(id: number | null) {
+  if (!id) {
+    patientName.value = ''
+    patientTotalArrears.value = 0
+    return
+  }
+  const found = patientOptions.value.find((p) => p.id === id)
+  if (found) patientName.value = found.name
+  void loadPatientArrears(id)
+}
+
+async function loadPatientArrears(id: number) {
+  try {
+    const patient = await getPatient(id)
+    patientName.value = patient.name
+    patientTotalArrears.value = patient.totalArrears ?? 0
+  } catch {
+    patientTotalArrears.value = 0
+  }
+}
+
+function onQuickPatientCreated(patient: { id: number; name: string }) {
+  form.patientId = patient.id
+  patientName.value = patient.name
+  void loadPatientArrears(patient.id)
+}
+
+async function applySuggestedFee(options?: { force?: boolean; confirmIfEdited?: boolean }) {
+  if (!visitId.value) return
+  const summary = await getVisitFeeSummary(visitId.value)
+  referencePurchaseCost.value = summary.referencePurchaseCost
+  if (options?.confirmIfEdited && amountDueManuallyEdited.value) {
+    try {
+      await ElMessageBox.confirm('是否按处方更新应收？', '更新应收', {
+        type: 'warning',
+        confirmButtonText: '更新',
+        cancelButtonText: '保留当前',
+      })
+      form.amountDue = summary.suggestedAmountDue
+      amountDueManuallyEdited.value = false
+    } catch {
+      // keep current
+    }
+    return
+  }
+  if (!amountDueManuallyEdited.value || options?.force) {
+    form.amountDue = summary.suggestedAmountDue
+  }
+}
+
+function onAmountDueInput() {
+  amountDueManuallyEdited.value = true
+}
+
 async function loadVisit() {
   if (isNew.value) {
     if (patientId.value) {
       form.patientId = patientId.value
-      try {
-        const patient = await getPatient(patientId.value)
-        patientName.value = patient.name
-      } catch {
-        ElMessage.error('患者不存在')
-        router.replace('/patient')
-      }
-    } else {
-      ElMessage.warning('请从患者详情页新建病历')
-      router.replace('/patient')
+      await loadPatientArrears(patientId.value)
+      patientOptions.value = [{ id: patientId.value, name: patientName.value } as PatientListItem]
     }
     return
   }
@@ -98,14 +169,26 @@ async function loadVisit() {
     form.diagnosis = detail.diagnosis ?? ''
     form.treatment = detail.treatment ?? ''
     form.remark = detail.remark ?? ''
+    form.amountDue = detail.amountDue
+    form.amountPaid = detail.amountPaid
+    referencePurchaseCost.value = detail.referencePurchaseCost
+    patientTotalArrears.value = detail.patientTotalArrears
+    patientOptions.value = [{ id: detail.patientId, name: detail.patientName } as PatientListItem]
+    amountDueManuallyEdited.value = false
   } finally {
     loading.value = false
   }
 }
 
+onActivated(async () => {
+  if (!isNew.value && visitId.value) {
+    await applySuggestedFee({ confirmIfEdited: true })
+  }
+})
+
 async function onSave() {
   if (!form.patientId) {
-    ElMessage.warning('缺少患者信息')
+    ElMessage.warning('请选择或新建患者')
     return
   }
   saving.value = true
@@ -126,6 +209,8 @@ async function onSave() {
       diagnosis: form.diagnosis.trim() || undefined,
       treatment: form.treatment.trim() || undefined,
       remark: form.remark.trim() || undefined,
+      amountDue: form.amountDue ?? 0,
+      amountPaid: form.amountPaid ?? 0,
     }
     if (isNew.value) {
       const created = await createVisit(payload)
@@ -145,12 +230,15 @@ function goBack() {
   if (form.patientId) {
     router.push(`/patient/${form.patientId}`)
   } else {
-    router.push('/patient')
+    router.push('/visit')
   }
 }
 
-function goPrescription() {
-  if (!visitId.value || !form.patientId) return
+async function goPrescription() {
+  if (!visitId.value || !form.patientId) {
+    ElMessage.warning('请先保存病历')
+    return
+  }
   router.push(`/prescription/new?visitId=${visitId.value}&patientId=${form.patientId}`)
 }
 
@@ -194,6 +282,12 @@ async function onAiStructure() {
 
 onMounted(async () => {
   await loadVisit()
+  if (!isNew.value && visitId.value) {
+    const prescriptions = await listPrescriptionsByVisit(visitId.value)
+    if (prescriptions.length > 0) {
+      await applySuggestedFee({ force: !amountDueManuallyEdited.value })
+    }
+  }
   try {
     const [voiceStatus, aiStatus] = await Promise.all([getVoiceStatus(), getAiStatus()])
     voiceAvailable.value = voiceStatus.available
@@ -220,9 +314,39 @@ onMounted(async () => {
         </div>
       </template>
 
-      <p v-if="patientName" class="patient-line">患者：{{ patientName }}</p>
+      <el-alert
+        v-if="patientTotalArrears > 0"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="arrears-alert"
+        :title="`该患者累计欠款 ¥${patientTotalArrears.toFixed(2)}，请注意收款`"
+      />
 
       <el-form label-width="108px" class="form-grid">
+        <el-form-item label="患者" required>
+          <div class="patient-picker">
+            <el-select
+              v-model="form.patientId"
+              filterable
+              remote
+              reserve-keyword
+              placeholder="搜索姓名或电话"
+              :remote-method="searchPatientOptions"
+              :loading="patientSearching"
+              style="flex: 1"
+              @change="onPatientSelected"
+            >
+              <el-option
+                v-for="p in patientOptions"
+                :key="p.id"
+                :label="`${p.name} ${p.phone || ''}`"
+                :value="p.id"
+              />
+            </el-select>
+            <el-button @click="showQuickPatient = true">新建患者</el-button>
+          </div>
+        </el-form-item>
         <el-form-item label="就诊时间">
           <el-date-picker
             v-model="form.visitTime"
@@ -313,11 +437,25 @@ onMounted(async () => {
             <QuickPhraseChips v-model="form.remark" field-key="remark" />
           </div>
         </el-form-item>
+        <el-divider content-position="left">收费</el-divider>
+        <el-form-item label="应收(元)">
+          <div class="fee-field">
+            <el-input-number v-model="form.amountDue" :min="0" :precision="2" :step="1" @change="onAmountDueInput" />
+            <span class="fee-hint">以下为按处方计算的默认应收，可手工修改</span>
+          </div>
+        </el-form-item>
+        <el-form-item label="实收(元)">
+          <el-input-number v-model="form.amountPaid" :min="0" :precision="2" :step="1" />
+        </el-form-item>
+        <el-form-item v-if="referencePurchaseCost > 0" label="参考成本">
+          <span class="cost-hint">参考进货成本：¥{{ referencePurchaseCost.toFixed(2) }}（仅内部参考，不打印）</span>
+        </el-form-item>
         <el-form-item v-if="!isNew">
           <el-button type="danger" plain @click="onDelete">删除病历</el-button>
         </el-form-item>
       </el-form>
     </el-card>
+    <QuickPatientDialog v-model:visible="showQuickPatient" @created="onQuickPatientCreated" />
   </main>
 </template>
 
@@ -346,6 +484,28 @@ onMounted(async () => {
 .patient-line {
   margin: 0 0 16px;
   color: #606266;
+}
+
+.arrears-alert {
+  margin-bottom: 16px;
+}
+
+.patient-picker {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.fee-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fee-hint,
+.cost-hint {
+  font-size: 12px;
+  color: #909399;
 }
 
 .form-grid {

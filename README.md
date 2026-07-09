@@ -17,4 +17,4 @@
 
 代码目录：`backend/`、`frontend/`、`scripts/`、`ocr-service/`、`docker-compose.yml`。
 
-**v1.4 新增**：拍照/上传进货单 OCR 识别 → 待审核入库表格 → 人工批准后写入库存。
+**v1.6 新增**：预印处方纸对齐打印、就诊收费（建议零售价/应收/实收/欠款）、病历独立菜单。更早版本含 v1.4 OCR 入库、v1.5 批量出库等，见 [`docs/共用/ROADMAP.md`](docs/共用/ROADMAP.md)。

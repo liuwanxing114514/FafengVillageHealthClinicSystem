@@ -29,6 +29,7 @@ export interface PatientDetail {
   phone: string
   address: string
   remark: string | null
+  totalArrears: number
   status: string
   createdAt: string
   updatedAt: string

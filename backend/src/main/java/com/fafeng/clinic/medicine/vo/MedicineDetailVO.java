@@ -14,6 +14,7 @@ public record MedicineDetailVO(
         String packageUnit,
         String manufacturer,
         BigDecimal purchasePrice,
+        BigDecimal suggestedRetailPrice,
         BigDecimal stockThreshold,
         BigDecimal stockThresholdInPackages,
         String pinyinAbbr,

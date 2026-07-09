@@ -274,6 +274,8 @@ public class MedicineService {
                 : request.packageUnit().trim());
         medicine.setManufacturer(nullToEmpty(request.manufacturer()));
         medicine.setPurchasePrice(request.purchasePrice());
+        medicine.setSuggestedRetailPrice(
+                request.suggestedRetailPrice() == null ? BigDecimal.ZERO : request.suggestedRetailPrice());
         medicine.setRemark(request.remark() == null ? "" : request.remark().trim());
         medicine.setPinyinAbbr(PinyinUtils.toAbbr(medicine.getName()));
     }
@@ -396,6 +398,7 @@ public class MedicineService {
                 medicine.getPackageUnit(),
                 medicine.getManufacturer(),
                 medicine.getPurchasePrice(),
+                medicine.getSuggestedRetailPrice() == null ? BigDecimal.ZERO : medicine.getSuggestedRetailPrice(),
                 medicine.getStockThreshold(),
                 toPackagesDisplay(medicine.getStockThreshold(), medicine, conversions),
                 medicine.getPinyinAbbr(),

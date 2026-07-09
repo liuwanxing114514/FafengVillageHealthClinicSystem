@@ -29,7 +29,7 @@ public class MedicineImportExcelParser {
 
     static final List<String> TEMPLATE_HEADERS = List.of(
             "药品名称", "通用名", "剂型", "规格", "基本单位", "包装单位", "换算关系",
-            "生产厂家", "条码", "进货单价", "库存下限", "批号", "有效期", "初始库存数量", "备注"
+            "生产厂家", "条码", "进货单价", "建议零售价", "库存下限", "批号", "有效期", "初始库存数量", "备注"
     );
 
     private static final Pattern CONVERSION_PATTERN = Pattern.compile(
@@ -131,13 +131,14 @@ public class MedicineImportExcelParser {
         parsed.setManufacturer(cellText(row.getCell(7)).trim());
         parsed.setBarcode(cellText(row.getCell(8)).trim());
         parsed.setPurchasePrice(parseDecimal(cellText(row.getCell(9)).trim(), null));
-        parsed.setStockThreshold(parseDecimal(cellText(row.getCell(10)).trim(), null));
-        parsed.setBatchNo(cellText(row.getCell(11)).trim());
-        String expiryText = cellText(row.getCell(12)).trim();
+        parsed.setSuggestedRetailPrice(parseDecimal(cellText(row.getCell(10)).trim(), BigDecimal.ZERO));
+        parsed.setStockThreshold(parseDecimal(cellText(row.getCell(11)).trim(), null));
+        parsed.setBatchNo(cellText(row.getCell(12)).trim());
+        String expiryText = cellText(row.getCell(13)).trim();
         parsed.setExpiryProvided(!expiryText.isEmpty());
-        parsed.setExpiryDate(parseDate(row.getCell(12)));
-        parsed.setInitialStock(parseDecimal(cellText(row.getCell(13)).trim(), BigDecimal.ZERO));
-        parsed.setRemark(cellText(row.getCell(14)).trim());
+        parsed.setExpiryDate(parseDate(row.getCell(13)));
+        parsed.setInitialStock(parseDecimal(cellText(row.getCell(14)).trim(), BigDecimal.ZERO));
+        parsed.setRemark(cellText(row.getCell(15)).trim());
         parseConversion(parsed);
         return parsed;
     }

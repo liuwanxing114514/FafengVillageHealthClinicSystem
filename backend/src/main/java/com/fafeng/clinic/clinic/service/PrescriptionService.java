@@ -43,6 +43,7 @@ public class PrescriptionService {
     private final MedicineService medicineService;
     private final AuditLogService auditLogService;
     private final QuickPhraseService quickPhraseService;
+    private final PrescriptionPrintTemplateService printTemplateService;
 
     public PrescriptionService(PrescriptionMapper prescriptionMapper,
                                PrescriptionItemMapper prescriptionItemMapper,
@@ -50,7 +51,8 @@ public class PrescriptionService {
                                PatientService patientService,
                                MedicineService medicineService,
                                AuditLogService auditLogService,
-                               QuickPhraseService quickPhraseService) {
+                               QuickPhraseService quickPhraseService,
+                               PrescriptionPrintTemplateService printTemplateService) {
         this.prescriptionMapper = prescriptionMapper;
         this.prescriptionItemMapper = prescriptionItemMapper;
         this.visitMapper = visitMapper;
@@ -58,6 +60,7 @@ public class PrescriptionService {
         this.medicineService = medicineService;
         this.auditLogService = auditLogService;
         this.quickPhraseService = quickPhraseService;
+        this.printTemplateService = printTemplateService;
     }
 
     @Transactional
@@ -132,17 +135,25 @@ public class PrescriptionService {
         Prescription prescription = requirePrescription(id);
         Patient patient = patientService.requirePatient(prescription.getPatientId());
         List<PrescriptionItemVO> items = listItemVOs(id);
+        LocalDate date = prescription.getPrescriptionDate();
 
         return new PrescriptionPrintVO(
                 CLINIC_NAME,
                 PRESCRIPTION_TITLE,
+                printTemplateService.getActiveTemplate(),
+                printTemplateService.getTemplateConfigJson(),
+                prescription.getVisitId(),
+                "全科",
                 patient.getName(),
                 formatGender(patient.getGender()),
                 patient.getAge(),
                 patient.getAddress(),
                 patient.getPhone(),
                 prescription.getDiagnosis(),
-                prescription.getPrescriptionDate(),
+                date,
+                date == null ? null : date.getYear(),
+                date == null ? null : date.getMonthValue(),
+                date == null ? null : date.getDayOfMonth(),
                 items,
                 "医生签名：");
     }
