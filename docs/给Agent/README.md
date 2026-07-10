@@ -25,6 +25,7 @@
 2. **@ 引用**（从项目根路径）：
    ```
    @docs/共用/ROADMAP.md
+   @docs/共用/DEPLOYMENT.md
    @docs/给Agent/开发交接.md
    @docs/给Agent/版本任务指南.md
    @docs/给Agent/功能点与实现记录.md
@@ -36,6 +37,20 @@
 6. 完成后要求 Agent 更新：`../共用/DEPLOYMENT.md`、`.env.example`、`AI架构.md`（若动 AI）。
 
 ---
+
+## NAS 生产部署（A+B — 后续 Agent 必读）
+
+| 项 | 约定 |
+| --- | --- |
+| 升级 | `git pull` + GHCR `pull` + `up -d`；**不用传 tar** |
+| 脚本 | NAS：`scripts/update.sh`；Windows：`scripts/deploy-remote.ps1` |
+| 镜像 | `ghcr.io/liuwanxing114514/clinic-{backend,frontend}:sha-<commit>` |
+| 时机 | push `main` 后等 **Release Images** CI 绿勾，再更新 NAS |
+| 备份 | 升级前确认 DSM **clinic-daily-backup**；含 Flyway 禁止跳过 |
+| 容器 | 仅 core 三服务；**不部署**本地 `ocr-service` |
+| 回滚 | `restore.sh` + 旧镜像；Flyway **不自动降级** |
+
+详见 [`../共用/DEPLOYMENT.md`](../共用/DEPLOYMENT.md)。
 
 ## 第一期（还没有代码）
 

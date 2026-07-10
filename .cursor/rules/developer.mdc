@@ -27,7 +27,7 @@ alwaysApply: false
 
 ## 交付要求
 
-完成后说明：改了哪些文件、如何验证、验收项对照、是否需更新 DEPLOYMENT / `.env.example`。
+完成后说明：改了哪些文件、如何验证、验收项对照。动部署/compose/CI 时**必更新** `docs/共用/DEPLOYMENT.md`、`docs/给Agent/README.md`、`.env.example`。
 
 ## 前端壳层（v1.0.1 起）
 

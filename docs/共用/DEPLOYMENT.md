@@ -1,5 +1,13 @@
 # 部署与升级指南
 
+> **【NAS 生产部署 A+B — 后续 Agent 必读】**  
+> - 升级：`git pull` + GHCR `pull` + `up -d`；**不用传 tar 包**  
+> - 脚本：[`scripts/update.sh`](../../scripts/update.sh)；Windows：[`scripts/deploy-remote.ps1`](../../scripts/deploy-remote.ps1)  
+> - 镜像：`ghcr.io/liuwanxing114514/clinic-{backend,frontend}:sha-<commit>`（回退 `main`）  
+> - 升级前：**DSM 备份**；含 Flyway 禁止跳过；等 **Release Images** CI 绿勾  
+> - 仅 **core 三容器**；不部署本地 `ocr-service`（OCR 走设置页 Vision）  
+> - 回滚：`restore.sh` + 旧镜像 tag；**Flyway 不自动降级**
+
 本文档面向**群晖 DS920+ NAS** 上的生产部署与运维（备份、首次安装、版本更新、回滚）。  
 开发机（Windows + IDEA）仅用于编码与测试，见 [第十三节](#十三开发机非生产)。
 
@@ -14,13 +22,13 @@
 ### 1.1 目录结构（程序与数据分离）
 
 ```text
-/volume1/docker/clinic/          # 程序（git clone / 上传，升级时可整体替换）
+/volume1/docker/clinic/          # 程序（git clone；升级用 update.sh）
   docker-compose.yml
   .env
   scripts/
+    update.sh                    # 日常升级（A+B）
     backup.sh
     restore.sh
-    seed-demo.sh
 
 /volume1/clinic-data/            # 数据（升级时保留，勿覆盖）
   postgres/
@@ -40,7 +48,8 @@
 | CPU | Intel Celeron J4125（x86_64），可运行 postgres / backend / frontend |
 | 内存 | 出厂 4GB 可跑 **core 三容器**；启用 OCR 或 Chat 建议 **8GB+** |
 | 存储 | 程序 + 数据建议 ≥ 50GB 可用空间 |
-| 编排 | Container Manager「项目」导入 compose，或 SSH 执行 `docker compose` |
+| 编排 | SSH 执行 `./scripts/update.sh`（推荐）；或 Container Manager |
+| 镜像 | GHCR 预构建（[`.github/workflows/release-images.yml`](../../.github/workflows/release-images.yml)）；NAS **不 build** |
 | 备份 | DSM **控制面板 → 任务计划**，每日执行 `scripts/backup.sh` |
 | HTTPS | **控制面板 → 登录门户 → 反向代理**（手机扫码、PWA 须 HTTPS） |
 
@@ -48,10 +57,10 @@
 
 | 组合 | 命令 | 说明 |
 | --- | --- | --- |
-| **最低（默认）** | `docker compose up -d --build` | postgres + backend + frontend；AI 可全关 |
-| **+ OCR** | `docker compose --profile ocr up -d --build` | 拍照进货单入库 |
-| **+ Chat / RAG** | 上述 + `.env` 填 API Key | 无额外容器；Agent、整理、相似病例 |
-| **不推荐** | `--profile whisper` | 生产默认**不部署**；手机用**输入法语音**录入 |
+| **最低（默认）** | `./scripts/update.sh` 或 `docker compose pull && up -d` | postgres + backend + frontend；镜像来自 GHCR |
+| **本地开发** | `docker compose up -d --build` | Windows / IDEA 联调 |
+| **+ Chat / RAG** | 上述 + `.env` 填 API Key | 无额外容器 |
+| **不推荐** | `--profile ocr` / `--profile whisper` | 生产 OCR 用设置页 **Vision**；语音用手机输入法 |
 
 **Whisper 默认不部署**：页面内「语音」按钮在未配置时会提示手动输入；手机在 HTTPS 病历页聚焦文本框后，用搜狗/微信/系统键盘的**语音键**即可，无需 NAS 上跑 Whisper 容器。
 
@@ -67,19 +76,25 @@
    mkdir -p /volume1/docker/clinic
    mkdir -p /volume1/clinic-data/{postgres,uploads,backup}
    ```
-3. 部署代码到 `/volume1/docker/clinic`（`git clone` 或上传 zip 解压）。
+3. 克隆代码到 `/volume1/docker/clinic`：
+   ```bash
+   cd /volume1/docker/clinic
+   git clone https://github.com/liuwanxing114514/FafengVillageHealthClinicSystem.git .
+   ```
 4. **新建** `.env`：
    ```bash
    cd /volume1/docker/clinic
    cp .env.example .env
    # 编辑：POSTGRES_PASSWORD、CLINIC_DATA_DIR=/volume1/clinic-data、FRONTEND_PORT 等
    ```
-5. 首次启动（**不加 whisper profile**）：
+5. 首次启动（拉 GHCR 镜像；需等 GitHub Actions **Release Images** 至少成功一次）：
    ```bash
    chmod +x scripts/*.sh
-   docker compose up -d --build
-   # 若需 OCR：docker compose --profile ocr up -d --build
+   export CLINIC_IMAGE_TAG=main
+   docker compose -p clinic pull backend frontend
+   docker compose -p clinic up -d
    ```
+   若 GHCR 尚无镜像，可临时：`docker compose -p clinic up -d --build`（仅首次应急）。
 6. 浏览器访问 `http://<NAS_IP>:8088`（或反代 HTTPS 域名）→ **`/setup` 设置管理员密码**（仅空库一次）。
 7. （可选）导入演示数据：`./scripts/seed-demo.sh`（含脱敏样例病历，供 RAG 自测）。
 8. DSM **任务计划** → 用户定义的脚本 → 每日 03:00：
@@ -132,24 +147,22 @@ cd /volume1/docker/clinic
 **适用**：系统已在运行，库内有真实业务数据。
 
 ```text
-1. ./scripts/backup.sh                         # 必须
-2. cd /volume1/docker/clinic
-3. 更新程序（勿动 clinic-data）：
-   - git fetch && git checkout v3.0-release    # 或指定 tag
-   - 或上传新版本覆盖 clinic/ 目录
-4. diff .env.example .env → 仅追加缺失项，禁止整文件覆盖 .env
-5. 核对 docker-compose.yml 变更（新 profile、端口）
-6. docker compose up -d --build
-   # 若需 OCR：docker compose --profile ocr up -d --build
-7. docker compose logs backend 2>&1 | grep -i flyway    # 确认迁移 SUCCESS
-8. 浏览器冒烟：登录、核心页无 500
-9. 按第七节该版本增量验收 + v1.0 基线回归
-10. 稳定后再升下一版
+1. 确认 GitHub Actions「Release Images」对本次 push 已成功（绿勾）
+2. 确认今日 DSM 备份已完成（clinic-daily-backup）
+3. SSH 到 NAS 执行：
+     cd /volume1/docker/clinic
+     ./scripts/update.sh
+   或在 Windows 开发机：
+     .\scripts\deploy-remote.ps1
+4. update.sh 自动：git pull → 按 commit 拉 sha 镜像 → compose up → 健康检查 → Flyway 日志
+5. diff .env.example .env → 仅追加缺失项（脚本会提示缺项）
+6. 浏览器冒烟：登录、核心页无 500
+7. 按该版本验收 + v1.0 基线回归
 ```
 
-**Container Manager 用户**：GUI「重新部署」前同样先 `backup.sh`；若 GUI 不支持 `--profile ocr`，请用 SSH 执行 compose 命令。
+**Flyway 注意**：迁移在 backend 启动时自动执行；**升级前必须备份**；失败时用 `restore.sh` 恢复库，不能只换旧镜像。
 
-**v3.0 更新说明**：无新 Flyway 迁移；主要是文档、NAS 脚本与验收清单。合并 `.env` 注释项后 rebuild，跑一遍 v3.0 全清单即可。
+**`package-release.ps1` tar 包**：仅离线应急，日常不用。
 
 **更新时不要**：执行 `seed-demo.sh` / `seed-demo-refresh.sh`（会写入或删除演示数据）。
 

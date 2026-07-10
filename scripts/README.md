@@ -2,11 +2,12 @@
 
 | 脚本 | 环境 | 用途 |
 | --- | --- | --- |
+| `update.sh` / `deploy-remote.ps1` | **NAS / Windows** | **生产升级（A+B）**：git pull + GHCR pull + up |
 | `backup.sh` / `restore.sh` | **群晖 NAS / Linux** | 生产备份与恢复 |
-| `deploy.sh` / `deploy.ps1` | NAS / Windows | 启动 compose；`.env` 配了 `CLINIC_OCR_URL` 或加 `--ocr` 时自动 `--profile ocr` |
 | `seed-demo.sh` / `seed-demo-refresh.sh` | NAS / Git Bash | 演示数据导入与刷新 |
-| `backup.ps1` / `restore.ps1` / `seed-demo.ps1` | **Windows 开发机** | 本地 Docker 联调（逻辑与 `.sh` 相同） |
+| `backup.ps1` / `restore.ps1` / `seed-demo.ps1` | **Windows 开发机** | 本地 Docker 联调 |
+| `package-release.ps1` | Windows | **仅离线应急** tar 包；日常不用 |
 | `seed-demo-data.sql` / `seed-demo-purge.sql` | 共用 | 演示 SQL |
 
-生产运维以 **`.sh`** 为准，见 [`docs/共用/DEPLOYMENT.md`](../docs/共用/DEPLOYMENT.md)。  
+生产运维以 **`update.sh`** 为准，见 [`docs/共用/DEPLOYMENT.md`](../docs/共用/DEPLOYMENT.md)。  
 本地测试见 [`docs/共用/测试清单.md`](../docs/共用/测试清单.md)。

@@ -82,8 +82,18 @@ cp .env.example .env
 # 编辑 .env：至少修改 POSTGRES_PASSWORD；CLINIC_DATA_DIR 默认 ./clinic-data
 
 docker compose up -d --build
-# 群晖 NAS 请用：sudo docker-compose -p clinic up -d --build
 ```
+
+**群晖 NAS 生产**（A+B，不用传 tar 包）：
+
+```bash
+git clone https://github.com/liuwanxing114514/FafengVillageHealthClinicSystem.git /volume1/docker/clinic
+cd /volume1/docker/clinic && cp .env.example .env
+# 编辑 .env 后，等 GitHub Actions「Release Images」绿勾：
+chmod +x scripts/*.sh && ./scripts/update.sh
+```
+
+日常升级：Windows `.\scripts\deploy-remote.ps1` 或 NAS `./scripts/update.sh`。详见 [DEPLOYMENT.md](docs/共用/DEPLOYMENT.md)。
 
 1. 浏览器打开 `http://localhost:8088`（端口见 `.env` 的 `FRONTEND_PORT`）
 2. 首次访问 `/setup` 设置管理员密码

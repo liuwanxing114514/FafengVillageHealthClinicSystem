@@ -1,10 +1,9 @@
 # 发凤村卫生室 — Docker Compose
-# 生产（群晖 DS920+）：默认仅 core 三服务
-#   sudo docker-compose -p clinic up -d --build
-# 可选 OCR 入库：sudo docker-compose -p clinic --profile ocr up -d --build
-# Whisper 默认不部署（手机用输入法语音）；若需页面内录音：
-#   sudo docker-compose -p clinic --profile whisper up -d --build 且 CLINIC_WHISPER_URL=http://whisper-service:9000
-# 基础镜像默认走 DOCKER_REGISTRY_PREFIX（DaoCloud）；海外 NAS 可在 .env 设为 docker.io 并配官方 Hub
+# 生产（群晖 DS920+，A+B）：git pull + GHCR pull，见 docs/共用/DEPLOYMENT.md
+#   ./scripts/update.sh
+# 本地开发：docker compose up -d --build
+# 可选 OCR：--profile ocr（生产默认不启，OCR 推荐设置页 Vision 模式）
+# Whisper 默认不部署（手机用输入法语音）
 # 详见 docs/共用/DEPLOYMENT.md
 
 services:
@@ -27,6 +26,7 @@ services:
       retries: 10
 
   backend:
+    image: ${BACKEND_IMAGE:-ghcr.io/liuwanxing114514/clinic-backend:${CLINIC_IMAGE_TAG:-main}}
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -69,6 +69,7 @@ services:
       - "${BACKEND_PORT:-8080}:8080"
 
   frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/liuwanxing114514/clinic-frontend:${CLINIC_IMAGE_TAG:-main}}
     build:
       context: ./frontend
       args:
