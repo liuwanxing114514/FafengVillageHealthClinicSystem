@@ -3,6 +3,8 @@ package com.fafeng.clinic.common;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.ai.retry.NonTransientAiException;
+import org.springframework.ai.retry.TransientAiException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -24,6 +26,31 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.OK)
     public Result<Void> handleBusiness(BusinessException ex) {
         return Result.fail(ex.getErrorCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler({NonTransientAiException.class, TransientAiException.class})
+    @ResponseStatus(HttpStatus.OK)
+    public Result<Void> handleAiUpstream(Exception ex) {
+        org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class)
+                .warn("AI upstream error: {}", ex.getMessage());
+        return Result.fail(ErrorCode.SERVICE_UNAVAILABLE, mapAiUpstreamMessage(ex.getMessage()));
+    }
+
+    private static String mapAiUpstreamMessage(String raw) {
+        String msg = raw != null ? raw : "";
+        String lower = msg.toLowerCase();
+        if (lower.contains("429") || lower.contains("rate limiting")
+                || lower.contains("50609") || lower.contains("50508")
+                || lower.contains("too busy") || lower.contains("system is too busy")) {
+            return "AI 服务当前较忙（DeepSeek 限流/拥堵），请稍后再试";
+        }
+        if (lower.contains("503") || lower.contains("502") || lower.contains("504")) {
+            return "AI 服务暂时不可用，请稍后重试";
+        }
+        if (lower.contains("401") || lower.contains("403") || lower.contains("invalid api key")) {
+            return "AI API Key 无效或已过期，请检查系统设置";
+        }
+        return "AI 服务暂不可用，请稍后重试";
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

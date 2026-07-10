@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fafeng.clinic.ai.client.OcrClient;
 import com.fafeng.clinic.ai.config.ClinicAiProperties;
 import com.fafeng.clinic.ai.config.ClinicOcrProperties;
+import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
 import com.fafeng.clinic.ai.entity.AiDraft;
 import com.fafeng.clinic.ai.model.InboundDraftLine;
 import com.fafeng.clinic.ai.model.InboundDraftPayload;
@@ -38,6 +39,7 @@ public class AiInboundOcrService {
     private final OcrClient ocrClient;
     private final AiProvider activeAiProvider;
     private final ClinicAiProperties aiProperties;
+    private final ExternalServiceConfigService externalServiceConfigService;
     private final ClinicOcrProperties ocrProperties;
     private final AiDraftService aiDraftService;
     private final MedicineService medicineService;
@@ -46,6 +48,7 @@ public class AiInboundOcrService {
     public AiInboundOcrService(OcrClient ocrClient,
                                AiProvider activeAiProvider,
                                ClinicAiProperties aiProperties,
+                               ExternalServiceConfigService externalServiceConfigService,
                                ClinicOcrProperties ocrProperties,
                                AiDraftService aiDraftService,
                                MedicineService medicineService,
@@ -53,6 +56,7 @@ public class AiInboundOcrService {
         this.ocrClient = ocrClient;
         this.activeAiProvider = activeAiProvider;
         this.aiProperties = aiProperties;
+        this.externalServiceConfigService = externalServiceConfigService;
         this.ocrProperties = ocrProperties;
         this.aiDraftService = aiDraftService;
         this.medicineService = medicineService;
@@ -67,7 +71,7 @@ public class AiInboundOcrService {
         if (!ocrClient.isConfigured()) {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "OCR 服务未配置");
         }
-        if (!aiProperties.isEnabled() || !activeAiProvider.isAvailable()) {
+        if (!externalServiceConfigService.isChatEnabled() || !activeAiProvider.isAvailable()) {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 整理服务不可用，请检查 AI 配置");
         }
         if (file == null || file.isEmpty()) {

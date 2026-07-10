@@ -1,12 +1,9 @@
 package com.fafeng.clinic.ai.config;
 
-import com.fafeng.clinic.ai.client.AiChatClient;
-import com.fafeng.clinic.ai.client.UnconfiguredAiChatClient;
 import com.fafeng.clinic.ai.provider.AiProvider;
 import com.fafeng.clinic.ai.provider.DeepSeekAiProvider;
 import com.fafeng.clinic.ai.provider.LocalAiProvider;
 import com.fafeng.clinic.ai.provider.NoopAiProvider;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,15 +11,13 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * AI 相关 Spring 配置：注册 {@link com.fafeng.clinic.ai.provider.AiProvider}，
+ * {@code activeAiProvider} 在 Chat 开关关闭时强制 {@code noop}，避免误调用外部 API。
+ */
 @Configuration
 @EnableConfigurationProperties({ClinicAiProperties.class, ClinicVoiceProperties.class, ClinicOcrProperties.class, ClinicEmbeddingProperties.class})
 public class AiConfiguration {
-
-    @Bean
-    @ConditionalOnMissingBean(AiChatClient.class)
-    public AiChatClient unconfiguredAiChatClient() {
-        return new UnconfiguredAiChatClient();
-    }
 
     @Bean
     public Map<String, AiProvider> aiProviders(NoopAiProvider noop,
@@ -36,8 +31,10 @@ public class AiConfiguration {
     }
 
     @Bean
-    public AiProvider activeAiProvider(ClinicAiProperties properties, Map<String, AiProvider> aiProviders) {
-        if (!properties.isEnabled()) {
+    public AiProvider activeAiProvider(ClinicAiProperties properties,
+                                       ExternalServiceConfigService externalServiceConfigService,
+                                       Map<String, AiProvider> aiProviders) {
+        if (!externalServiceConfigService.isChatEnabled()) {
             return aiProviders.get("noop");
         }
         String providerName = properties.getProvider() == null

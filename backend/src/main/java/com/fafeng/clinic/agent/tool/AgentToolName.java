@@ -2,6 +2,10 @@ package com.fafeng.clinic.agent.tool;
 
 import java.util.Set;
 
+/**
+ * Agent 工具名常量（与 Spring AI {@code @Tool(name=...)} 一致）。
+ * 前端中文映射见 {@code frontend/src/utils/agentLabels.ts}。
+ */
 public final class AgentToolName {
 
     public static final String SEARCH_MEDICINE = "searchMedicine";

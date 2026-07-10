@@ -10,7 +10,10 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 /**
- * Spring AI {@code @Tool} 注册层，业务逻辑复用 {@link AgentToolRegistry}。
+ * Spring AI {@code @Tool} 注册层：方法名即模型看到的工具名（如 {@code searchPatient}）。
+ *
+ * <p>业务逻辑在 {@link com.fafeng.clinic.agent.tool.AgentToolRegistry} 与各 *Tool 类，本类只做参数组装、
+ * 调用、格式化返回字符串给大模型，并写入 {@link com.fafeng.clinic.agent.service.AgentToolCallContext}。
  */
 @Component
 @RequiredArgsConstructor
@@ -51,9 +54,9 @@ public class ClinicAgentTools {
         return executeTool(AgentToolName.QUERY_EXPIRING_MEDICINE, objectMapper.createObjectNode());
     }
 
-    @Tool(name = "searchPatient", description = "按姓名、电话或身份证号搜索患者")
+    @Tool(name = "searchPatient", description = "搜索或列出患者；结果按更新时间倒序。问最近/最新一位患者时不传 keyword，page=1 size=1")
     public String searchPatient(
-            @ToolParam(description = "搜索关键词", required = false) String keyword,
+            @ToolParam(description = "姓名/电话/身份证关键词；查最近患者或统计人数时不要传", required = false) String keyword,
             @ToolParam(description = "页码", required = false) Integer page,
             @ToolParam(description = "每页条数", required = false) Integer size) {
         ObjectNode args = objectMapper.createObjectNode();

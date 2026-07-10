@@ -7,6 +7,7 @@ import AppTabs from '@/layouts/AppTabs.vue'
 import { useBreakpoint } from '@/composables/useBreakpoint'
 import { MENU_ITEMS } from '@/config/menu'
 import { useAuthStore } from '@/stores/auth'
+import { routeComponentKey } from '@/utils/routeKey'
 import {
   ChatDotRound,
   Document,
@@ -94,7 +95,7 @@ function navigate(path: string) {
       <el-main class="main-content">
         <router-view v-slot="{ Component, route: currentRoute }">
           <keep-alive :max="10">
-            <component :is="Component" :key="currentRoute.fullPath" />
+            <component :is="Component" :key="routeComponentKey(currentRoute)" />
           </keep-alive>
         </router-view>
       </el-main>

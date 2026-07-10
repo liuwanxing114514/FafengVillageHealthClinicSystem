@@ -3,6 +3,7 @@ package com.fafeng.clinic.ai.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fafeng.clinic.ai.config.ClinicAiProperties;
+import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
 import com.fafeng.clinic.ai.entity.AiDraft;
 import com.fafeng.clinic.ai.model.VisitDraftPayload;
 import com.fafeng.clinic.ai.provider.AiProvider;
@@ -18,11 +19,12 @@ public class AiVisitStructureService {
 
     private final AiDraftService aiDraftService;
     private final AiProvider activeAiProvider;
+    private final ExternalServiceConfigService externalServiceConfigService;
     private final ClinicAiProperties properties;
     private final ObjectMapper objectMapper;
 
     public AiDraftVO structureVisit(String text, Long patientId) {
-        if (!properties.isEnabled()) {
+        if (!externalServiceConfigService.isChatEnabled()) {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 功能未启用");
         }
         if (!activeAiProvider.isAvailable()) {

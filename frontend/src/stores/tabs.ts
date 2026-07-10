@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { RouteLocationNormalized } from 'vue-router'
 import { MAX_TABS } from '@/config/menu'
+import { routeTabPath } from '@/utils/routeKey'
 
 export interface TabItem {
   path: string
@@ -38,8 +39,14 @@ export const useTabsStore = defineStore('tabs', () => {
   function syncFromRoute(route: RouteLocationNormalized) {
     if (route.meta.standalone || route.meta.public) return
 
-    const path = route.fullPath
+    const path = routeTabPath(route)
     const title = resolveTitle(route)
+
+    // 合并旧版 /ai?c= 标签，避免顶部出现两个「AI 助手」
+    if (route.name === 'ai-assistant') {
+      tabs.value = tabs.value.filter((t) => !t.path.startsWith('/ai'))
+    }
+
     const existing = tabs.value.find((t) => t.path === path)
     if (!existing) {
       if (tabs.value.length >= MAX_TABS) {

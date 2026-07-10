@@ -1,6 +1,9 @@
 package com.fafeng.clinic.ai.service;
 
-import com.fafeng.clinic.ai.config.ClinicEmbeddingProperties;
+import com.fafeng.clinic.ai.client.ResilientEmbeddingModel;
+import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
+import com.fafeng.clinic.ai.channel.ChannelRegistry;
+import com.fafeng.clinic.ai.channel.EmbeddingChannelConfig;
 import com.fafeng.clinic.ai.dto.SimilarVisitSearchRequest;
 import com.fafeng.clinic.ai.mapper.VisitEmbeddingMapper;
 import com.fafeng.clinic.ai.model.SimilarVisitMatchRow;
@@ -12,9 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.beans.factory.ObjectProvider;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -34,55 +34,54 @@ import static org.mockito.Mockito.when;
 class VisitSimilaritySearchServiceTest {
 
     @Mock
-    private ClinicEmbeddingProperties embeddingProperties;
+    private ExternalServiceConfigService externalServiceConfigService;
     @Mock
-    private ObjectProvider<EmbeddingModel> embeddingModelProvider;
+    private ResilientEmbeddingModel resilientEmbeddingModel;
+    @Mock
+    private ChannelRegistry channelRegistry;
     @Mock
     private VisitEmbeddingMapper visitEmbeddingMapper;
     @Mock
     private VisitEmbeddingTextBuilder textBuilder;
     @Mock
     private PatientService patientService;
-    @Mock
-    private EmbeddingModel embeddingModel;
 
     @InjectMocks
     private VisitSimilaritySearchService service;
 
     @Test
     void search_returnsUnavailableWhenEmbeddingDisabled() {
-        when(embeddingProperties.isEnabled()).thenReturn(false);
+        when(externalServiceConfigService.isEmbeddingEnabled()).thenReturn(false);
 
         SimilarVisitSearchResultVO result = service.search(sampleRequest());
 
         assertFalse(result.available());
         assertTrue(result.items().isEmpty());
-        verify(embeddingModelProvider, never()).getIfAvailable();
+        verify(resilientEmbeddingModel, never()).embed(anyString());
     }
 
     @Test
     void search_returnsEmptyWhenQueryBlank() {
-        when(embeddingProperties.isEnabled()).thenReturn(true);
-        when(embeddingProperties.isConfigured()).thenReturn(true);
-        when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
+        when(externalServiceConfigService.isEmbeddingEnabled()).thenReturn(true);
+        when(resilientEmbeddingModel.isConfigured()).thenReturn(true);
         when(textBuilder.buildDesensitizedSearchQuery(any(), any(), any(), any())).thenReturn("");
 
         SimilarVisitSearchResultVO result = service.search(sampleRequest());
 
         assertTrue(result.available());
         assertTrue(result.items().isEmpty());
-        verify(embeddingModel, never()).embed(anyString());
+        verify(resilientEmbeddingModel, never()).embed(anyString());
     }
 
     @Test
     void search_returnsTopMatchesWhenConfigured() {
-        when(embeddingProperties.isEnabled()).thenReturn(true);
-        when(embeddingProperties.isConfigured()).thenReturn(true);
-        when(embeddingProperties.getDimensions()).thenReturn(3);
-        when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
+        when(externalServiceConfigService.isEmbeddingEnabled()).thenReturn(true);
+        when(resilientEmbeddingModel.isConfigured()).thenReturn(true);
+        when(channelRegistry.primaryEmbeddingConfig()).thenReturn(
+                new EmbeddingChannelConfig("main", "主", 1, true, "url", "key", "model", 3));
         when(patientService.requirePatient(1L)).thenReturn(new Patient());
         when(textBuilder.buildDesensitizedSearchQuery(any(), any(), any(), any())).thenReturn("主诉：咳嗽");
-        when(embeddingModel.embed("主诉：咳嗽")).thenReturn(new float[]{0.1f, 0.2f, 0.3f});
+        when(resilientEmbeddingModel.embed("主诉：咳嗽")).thenReturn(new float[]{0.1f, 0.2f, 0.3f});
 
         SimilarVisitMatchRow row = new SimilarVisitMatchRow();
         row.setVisitId(9L);
@@ -103,11 +102,10 @@ class VisitSimilaritySearchServiceTest {
 
     @Test
     void search_swallowsEmbeddingFailure() {
-        when(embeddingProperties.isEnabled()).thenReturn(true);
-        when(embeddingProperties.isConfigured()).thenReturn(true);
-        when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
+        when(externalServiceConfigService.isEmbeddingEnabled()).thenReturn(true);
+        when(resilientEmbeddingModel.isConfigured()).thenReturn(true);
         when(textBuilder.buildDesensitizedSearchQuery(any(), any(), any(), any())).thenReturn("主诉：发热");
-        when(embeddingModel.embed(anyString())).thenThrow(new RuntimeException("api down"));
+        when(resilientEmbeddingModel.embed(anyString())).thenThrow(new RuntimeException("api down"));
 
         SimilarVisitSearchResultVO result = service.search(sampleRequest());
 

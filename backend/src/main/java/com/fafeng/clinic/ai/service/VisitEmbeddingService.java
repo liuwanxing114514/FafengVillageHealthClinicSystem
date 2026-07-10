@@ -1,6 +1,10 @@
 package com.fafeng.clinic.ai.service;
 
+import com.fafeng.clinic.ai.channel.ChannelRegistry;
+import com.fafeng.clinic.ai.channel.EmbeddingChannelConfig;
+import com.fafeng.clinic.ai.client.ResilientEmbeddingModel;
 import com.fafeng.clinic.ai.config.ClinicEmbeddingProperties;
+import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
 import com.fafeng.clinic.ai.mapper.VisitEmbeddingMapper;
 import com.fafeng.clinic.ai.vo.VisitEmbeddingStatusVO;
 import com.fafeng.clinic.ai.vo.VisitEmbeddingSyncResultVO;
@@ -11,7 +15,6 @@ import com.fafeng.clinic.patient.entity.Patient;
 import com.fafeng.clinic.patient.service.PatientService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,19 +29,25 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VisitEmbeddingService {
 
+    private final ExternalServiceConfigService externalServiceConfigService;
     private final ClinicEmbeddingProperties embeddingProperties;
-    private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
+    private final ResilientEmbeddingModel resilientEmbeddingModel;
+    private final ChannelRegistry channelRegistry;
     private final VisitEmbeddingMapper visitEmbeddingMapper;
     private final VisitEmbeddingTextBuilder textBuilder;
     private final PatientService patientService;
 
     public VisitEmbeddingStatusVO getStatus() {
+        EmbeddingChannelConfig primary = channelRegistry.primaryEmbeddingConfig();
+        String provider = embeddingProperties.getProvider();
+        String model = primary != null ? primary.model() : embeddingProperties.getModel();
+        int dimensions = primary != null ? primary.dimensions() : embeddingProperties.getDimensions();
         return new VisitEmbeddingStatusVO(
-                embeddingProperties.isEnabled(),
-                embeddingProperties.getProvider(),
-                embeddingProperties.getModel(),
-                embeddingProperties.getDimensions(),
-                embeddingProperties.isConfigured() && embeddingModelProvider.getIfAvailable() != null,
+                externalServiceConfigService.isEmbeddingEnabled(),
+                provider,
+                model,
+                dimensions,
+                resilientEmbeddingModel.isConfigured(),
                 visitEmbeddingMapper.countActiveVisits(),
                 visitEmbeddingMapper.countSyncedActiveVisits(),
                 visitEmbeddingMapper.countPendingSync(),
@@ -59,13 +68,14 @@ public class VisitEmbeddingService {
     private VisitEmbeddingSyncResultVO syncInternal(String mode, List<ClinicVisit> visits) {
         long start = System.currentTimeMillis();
         EmbeddingModel embeddingModel = requireEmbeddingModel();
+        int expectedDimensions = resolveDimensions();
         long synced = 0;
         long skipped = 0;
         long failed = 0;
 
         for (ClinicVisit visit : visits) {
             try {
-                if (syncOne(embeddingModel, visit)) {
+                if (syncOne(embeddingModel, visit, expectedDimensions)) {
                     synced++;
                 } else {
                     skipped++;
@@ -88,7 +98,7 @@ public class VisitEmbeddingService {
                 System.currentTimeMillis() - start);
     }
 
-    private boolean syncOne(EmbeddingModel embeddingModel, ClinicVisit visit) {
+    private boolean syncOne(EmbeddingModel embeddingModel, ClinicVisit visit, int expectedDimensions) {
         Patient patient = null;
         if (visit.getPatientId() != null) {
             try {
@@ -103,15 +113,17 @@ public class VisitEmbeddingService {
         }
 
         float[] vector = embeddingModel.embed(summary);
-        validateDimensions(vector, embeddingProperties.getDimensions());
+        validateDimensions(vector, expectedDimensions);
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         OffsetDateTime sourceUpdatedAt = visit.getUpdatedAt() == null ? now : visit.getUpdatedAt();
+        EmbeddingChannelConfig primary = channelRegistry.primaryEmbeddingConfig();
+        String modelName = primary != null ? primary.model() : embeddingProperties.getModel();
         visitEmbeddingMapper.upsertEmbedding(
                 visit.getId(),
                 toPgVectorLiteral(vector),
                 summary,
-                embeddingProperties.getModel(),
-                embeddingProperties.getDimensions(),
+                modelName,
+                expectedDimensions,
                 sourceUpdatedAt,
                 now,
                 now);
@@ -127,17 +139,18 @@ public class VisitEmbeddingService {
     }
 
     private EmbeddingModel requireEmbeddingModel() {
-        if (!embeddingProperties.isEnabled()) {
+        if (!externalServiceConfigService.isEmbeddingEnabled()) {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "病历向量化未启用");
         }
-        if (!embeddingProperties.isConfigured()) {
-            throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "Embedding 配置不完整，请检查 .env");
+        if (!resilientEmbeddingModel.isConfigured()) {
+            throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "Embedding 配置不完整，请在系统设置中配置");
         }
-        EmbeddingModel model = embeddingModelProvider.getIfAvailable();
-        if (model == null) {
-            throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "Embedding 模型未装配，请检查 provider 与 API 配置");
-        }
-        return model;
+        return resilientEmbeddingModel;
+    }
+
+    private int resolveDimensions() {
+        EmbeddingChannelConfig primary = channelRegistry.primaryEmbeddingConfig();
+        return primary != null ? primary.dimensions() : embeddingProperties.getDimensions();
     }
 
     static String toPgVectorLiteral(float[] vector) {

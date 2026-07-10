@@ -1,5 +1,6 @@
 package com.fafeng.clinic.agent.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fafeng.clinic.agent.tool.AgentToolResult;
 import org.springframework.stereotype.Component;
 
@@ -7,7 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 单次 Agent 对话内的工具调用记录，供编排层写日志与待确认卡片。
+ * 单次 Agent 对话内的工具调用记录（ThreadLocal）。
+ *
+ * <p>{@link com.fafeng.clinic.agent.tool.ClinicAgentTools#executeTool} 每执行一个工具就 {@link #record} 一条；
+ * 编排层据此写审计日志、组装 {@code toolCalls}，{@link AgentReferenceExtractor} 还可读 {@code data} JSON 做页面跳转。
  */
 @Component
 public class AgentToolCallContext {
@@ -29,7 +33,8 @@ public class AgentToolCallContext {
                 result.summary(),
                 durationMs,
                 result.success(),
-                result.pendingDraftId()));
+                result.pendingDraftId(),
+                result.data()));
     }
 
     public List<ToolCallRecord> getRecords() {
@@ -42,7 +47,8 @@ public class AgentToolCallContext {
             String resultSummary,
             long durationMs,
             boolean success,
-            Long pendingDraftId
+            Long pendingDraftId,
+            JsonNode data
     ) {
     }
 }

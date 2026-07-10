@@ -10,6 +10,10 @@ public class ClinicAiProperties {
     private String deepseekApiKey = "";
     private String deepseekBaseUrl = "https://api.deepseek.com";
     private String deepseekModel = "deepseek-chat";
+    /** 主通道（如硅基流动）限流时，可选 DeepSeek 官方 API 兜底 */
+    private String deepseekFallbackApiKey = "";
+    private String deepseekFallbackBaseUrl = "https://api.deepseek.com";
+    private String deepseekFallbackModel = "deepseek-chat";
     private String localBaseUrl = "http://localhost:11434";
     private String visitStructurePrompt = """
             你是诊所病历整理助手。根据医生提供的自由文本，提取结构化字段。
@@ -31,8 +35,13 @@ public class ClinicAiProperties {
             规则：
             - 查库存前先 searchMedicine 或提供 medicineName
             - 问临期药品用 queryExpiringMedicine
+            - 查患者用 searchPatient；keyword 填姓名/电话/身份证片段，勿把「最近/最新/谁」等当作 keyword
+            - 问「最近/最新/最后一位患者」时：searchPatient 不传 keyword，page=1，size=1（结果按更新时间倒序）
+            - 问「有多少患者/列出患者」时：searchPatient 不传 keyword，按需设 size
+            - 查某患者病历用 searchPatientVisit（先 searchPatient 得 patientId 亦可）
             - 出库请求用 generateOutboundDraft，只生成草稿不扣库存
-            - 回答简洁、用中文、包含关键数字
+            - 回答简洁、用中文、包含关键数字；必须依据工具返回，不可臆测
+            - 禁止在回复中输出患者完整姓名、电话、身份证号；工具返回的姓名已是脱敏形式，请原样引用
             """;
 
     public boolean isEnabled() {
@@ -73,6 +82,34 @@ public class ClinicAiProperties {
 
     public void setDeepseekModel(String deepseekModel) {
         this.deepseekModel = deepseekModel;
+    }
+
+    public String getDeepseekFallbackApiKey() {
+        return deepseekFallbackApiKey;
+    }
+
+    public void setDeepseekFallbackApiKey(String deepseekFallbackApiKey) {
+        this.deepseekFallbackApiKey = deepseekFallbackApiKey;
+    }
+
+    public String getDeepseekFallbackBaseUrl() {
+        return deepseekFallbackBaseUrl;
+    }
+
+    public void setDeepseekFallbackBaseUrl(String deepseekFallbackBaseUrl) {
+        this.deepseekFallbackBaseUrl = deepseekFallbackBaseUrl;
+    }
+
+    public String getDeepseekFallbackModel() {
+        return deepseekFallbackModel;
+    }
+
+    public void setDeepseekFallbackModel(String deepseekFallbackModel) {
+        this.deepseekFallbackModel = deepseekFallbackModel;
+    }
+
+    public boolean hasDeepseekFallback() {
+        return deepseekFallbackApiKey != null && !deepseekFallbackApiKey.isBlank();
     }
 
     public String getLocalBaseUrl() {

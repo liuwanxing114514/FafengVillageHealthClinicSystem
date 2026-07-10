@@ -192,6 +192,8 @@ docker compose --profile ocr up -d --build
 docker compose --profile whisper up -d --build
 ```
 
+**群晖 DS920+**：若无 `docker compose` 子命令，用 `sudo docker-compose up -d --build`（连字符）。首次 build 较慢属正常；Dockerfile 已配置 Maven（阿里云）、npm（npmmirror）、pip（清华）国内镜像以加速 NAS 构建。
+
 ---
 
 ## 七、分版本升级差异
@@ -210,6 +212,7 @@ docker compose --profile whisper up -d --build
 | **v2.2** | Flyway V13；`.env` 增 Embedding | 关闭 Embedding 时不影响 |
 | **v2.3** | 仅程序更新 | — |
 | **v2.4** | 设置页向量化 UI；PWA / 手机抽屉 | 关闭 Embedding 时不影响 |
+| **v2.5** | Flyway V14；`.env` 增 `CLINIC_SETTINGS_ENCRYPTION_KEY`；设置页 AI 外部服务/多通道 | DB 空时仍可用 legacy env |
 | **v2.6** | 仅程序更新；流水 Excel、病历 PDF | — |
 | **v3.0** | 文档与 NAS 脚本；按全清单验收 | — |
 
@@ -227,6 +230,8 @@ CLINIC_EMBEDDING_API_KEY=
 CLINIC_EMBEDDING_BASE_URL=https://api.siliconflow.cn
 CLINIC_EMBEDDING_MODEL=BAAI/bge-m3
 CLINIC_EMBEDDING_DIMENSIONS=1024
+CLINIC_SETTINGS_ENCRYPTION_KEY=
+# 设置页保存 API Key 前必需；生成：openssl rand -base64 32
 # Spring AI 会自动追加 /v1/...，base-url 勿带 /v1
 # Whisper 生产留空即可
 CLINIC_WHISPER_URL=
@@ -236,12 +241,14 @@ CLINIC_WHISPER_URL=
 
 ## 八、AI 能力独立开关
 
-| 能力 | 开关 | 依赖 | 关闭时行为 |
-| --- | --- | --- | --- |
-| Chat / 整理 / Agent | `CLINIC_AI_ENABLED` + `CLINIC_AI_PROVIDER` | 外网 API | noop，基础业务正常 |
-| Whisper 页面录音 | `CLINIC_WHISPER_URL` 空 + 不启 profile | whisper 容器 | 用手机**输入法语音**；按钮点按提示手动输入 |
-| OCR 入库 | `CLINIC_OCR_URL` 空 + 不启 profile | ocr 容器 + Chat | OCR 入口不可用 |
-| Embedding / RAG | `CLINIC_EMBEDDING_ENABLED=false` | API + pgvector | 相似病例空状态；设置页禁用同步 |
+**v2.5 起**：可在系统设置页「AI 外部服务」统一管理开关与多通道 API；保存后立即生效。DB 无记录时仍读 `.env` bootstrap（NAS 首次部署零改动）。在设置页保存 API Key 前，须在 `.env` 配置 `CLINIC_SETTINGS_ENCRYPTION_KEY`（`openssl rand -base64 32`）。
+
+| 能力 | 开关（env bootstrap） | 设置页（DB 有记录后） | 依赖 | 关闭时行为 |
+| --- | --- | --- | --- | --- |
+| Chat / 整理 / Agent | `CLINIC_AI_ENABLED` | AI 对话与助手 | 外网 API | 基础业务正常 |
+| Embedding / RAG | `CLINIC_EMBEDDING_ENABLED` | 病历向量化 | API + pgvector | 相似病例空；同步禁用 |
+| Whisper 页面录音 | `CLINIC_WHISPER_URL` | 语音转写 + URL | whisper 容器 | 用手机输入法语音 |
+| OCR 入库 | `CLINIC_OCR_URL` | 进货单识别 + URL | ocr 容器 + Chat | OCR 入口不可用 |
 
 **AI 全关**：上述全部关闭时，系统应与 v1.0 基线同等稳定（断网可用基础业务）。
 
