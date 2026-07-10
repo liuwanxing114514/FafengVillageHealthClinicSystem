@@ -51,9 +51,9 @@ public class ClinicAgentTools {
         return executeTool(AgentToolName.QUERY_EXPIRING_MEDICINE, objectMapper.createObjectNode());
     }
 
-    @Tool(name = "searchPatient", description = "按姓名、电话或身份证号搜索患者")
+    @Tool(name = "searchPatient", description = "搜索或列出患者；结果按更新时间倒序。问最近/最新一位患者时不传 keyword，page=1 size=1")
     public String searchPatient(
-            @ToolParam(description = "搜索关键词", required = false) String keyword,
+            @ToolParam(description = "姓名/电话/身份证关键词；查最近患者或统计人数时不要传", required = false) String keyword,
             @ToolParam(description = "页码", required = false) Integer page,
             @ToolParam(description = "每页条数", required = false) Integer size) {
         ObjectNode args = objectMapper.createObjectNode();

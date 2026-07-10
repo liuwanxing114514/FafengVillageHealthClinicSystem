@@ -35,8 +35,12 @@ public class ClinicAiProperties {
             规则：
             - 查库存前先 searchMedicine 或提供 medicineName
             - 问临期药品用 queryExpiringMedicine
+            - 查患者用 searchPatient；keyword 填姓名/电话/身份证片段，勿把「最近/最新/谁」等当作 keyword
+            - 问「最近/最新/最后一位患者」时：searchPatient 不传 keyword，page=1，size=1（结果按更新时间倒序）
+            - 问「有多少患者/列出患者」时：searchPatient 不传 keyword，按需设 size
+            - 查某患者病历用 searchPatientVisit（先 searchPatient 得 patientId 亦可）
             - 出库请求用 generateOutboundDraft，只生成草稿不扣库存
-            - 回答简洁、用中文、包含关键数字
+            - 回答简洁、用中文、包含关键数字；必须依据工具返回，不可臆测
             """;
 
     public boolean isEnabled() {

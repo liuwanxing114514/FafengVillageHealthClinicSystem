@@ -12,11 +12,19 @@ export interface PendingAction {
   summary: string
 }
 
+export interface AgentReference {
+  refType: 'patient' | 'visit' | string
+  refId: number
+  label: string
+  hint?: string
+}
+
 export interface AgentChatResponse {
   sessionId: string
   answer: string
   toolCalls: AgentToolCall[]
   pendingActions: PendingAction[]
+  references: AgentReference[]
 }
 
 export interface AgentExecutionLog {
@@ -34,4 +42,5 @@ export interface ChatMessage {
   content: string
   toolCalls?: AgentToolCall[]
   pendingActions?: PendingAction[]
+  references?: AgentReference[]
 }

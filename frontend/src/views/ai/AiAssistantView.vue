@@ -6,7 +6,8 @@ import { Microphone, Promotion } from '@element-plus/icons-vue'
 import { getAiStatus, transcribeVoice } from '@/api/ai'
 import { getAgentLogs, postAgentChat } from '@/api/agent'
 import type { AiStatus } from '@/types/ai'
-import type { ChatMessage } from '@/types/agent'
+import type { AgentReference, ChatMessage } from '@/types/agent'
+import { formatToolArgs, providerLabel, toolLabel } from '@/utils/agentLabels'
 
 const router = useRouter()
 const loading = ref(false)
@@ -20,6 +21,11 @@ const showLogs = ref(false)
 const recentLogs = ref<Awaited<ReturnType<typeof getAgentLogs>>>([])
 
 const aiReady = computed(() => status.value?.enabled && status.value?.providerAvailable)
+
+const statusLabel = computed(() => {
+  if (!status.value) return '加载中'
+  return providerLabel(status.value.provider, status.value.enabled && status.value.providerAvailable)
+})
 
 let mediaRecorder: MediaRecorder | null = null
 let audioChunks: Blob[] = []
@@ -52,6 +58,7 @@ async function sendMessage() {
       content: response.answer,
       toolCalls: response.toolCalls,
       pendingActions: response.pendingActions,
+      references: response.references ?? [],
     })
   } catch (err: unknown) {
     const msg = (err as { message?: string })?.message ?? '请求失败'
@@ -104,6 +111,16 @@ function openDraft(draftId: number) {
   router.push({ name: 'outbound-draft', params: { id: draftId } })
 }
 
+function openReference(ref: AgentReference) {
+  if (ref.refType === 'patient') {
+    router.push({ name: 'patient-detail', params: { id: String(ref.refId) } })
+    return
+  }
+  if (ref.refType === 'visit') {
+    router.push({ name: 'visit-form', params: { id: String(ref.refId) } })
+  }
+}
+
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
@@ -120,20 +137,20 @@ function onKeydown(e: KeyboardEvent) {
           <span>AI 助手</span>
           <div class="header-actions">
             <el-tag v-if="status" :type="aiReady ? 'success' : 'info'" size="small">
-              {{ status.enabled ? status.provider : '未启用' }}
+              {{ statusLabel }}
             </el-tag>
-            <el-button link type="primary" @click="loadLogs">执行日志</el-button>
+            <el-button link type="primary" @click="loadLogs">调用记录</el-button>
           </div>
         </div>
       </template>
 
       <div v-if="!aiReady" class="notice">
-        AI 功能未启用或 Provider 不可用。日常业务不受影响；启用后可用自然语言查询库存、患者等。
+        AI 功能未启用或不可用。日常业务不受影响；启用后可用自然语言查询库存、患者等。
       </div>
 
       <div class="messages">
         <div v-if="messages.length === 0" class="empty-hint">
-          试试：「阿莫西林还有多少」「哪些药快过期」「帮阿莫西林出库 5 盒」
+          试试：「搜索患者 李印雪」「最近的一个患者是谁」「阿莫西林还有多少」「哪些药快过期」
         </div>
         <div
           v-for="(msg, idx) in messages"
@@ -142,15 +159,33 @@ function onKeydown(e: KeyboardEvent) {
           :class="msg.role"
         >
           <div class="bubble">{{ msg.content }}</div>
-          <div v-if="msg.toolCalls?.length" class="tool-calls">
-            <div v-for="(call, i) in msg.toolCalls" :key="i" class="tool-call">
-              <el-tag size="small" :type="call.success ? 'success' : 'danger'">
-                {{ call.toolName }}
-              </el-tag>
-              <span class="tool-meta">{{ call.argsSummary }} → {{ call.resultSummary }}</span>
-              <span class="tool-duration">{{ call.durationMs }}ms</span>
-            </div>
+          <div v-if="msg.references?.length" class="references">
+            <el-button
+              v-for="ref in msg.references"
+              :key="`${ref.refType}-${ref.refId}`"
+              type="primary"
+              plain
+              size="small"
+              @click="openReference(ref)"
+            >
+              {{ ref.label }}
+              <span v-if="ref.hint" class="ref-hint">{{ ref.hint }}</span>
+            </el-button>
           </div>
+          <details v-if="msg.toolCalls?.length" class="tool-details">
+            <summary>查看调用详情</summary>
+            <div class="tool-calls">
+              <div v-for="(call, i) in msg.toolCalls" :key="i" class="tool-call">
+                <el-tag size="small" :type="call.success ? 'success' : 'danger'">
+                  {{ toolLabel(call.toolName) }}
+                </el-tag>
+                <span class="tool-meta">
+                  {{ formatToolArgs(call.argsSummary) || '无参数' }} → {{ call.resultSummary }}
+                </span>
+                <span class="tool-duration">{{ call.durationMs }} 毫秒</span>
+              </div>
+            </div>
+          </details>
           <div v-if="msg.pendingActions?.length" class="pending-actions">
             <el-alert
               v-for="action in msg.pendingActions"
@@ -186,12 +221,18 @@ function onKeydown(e: KeyboardEvent) {
       </div>
     </el-card>
 
-    <el-drawer v-model="showLogs" title="Agent 执行日志" size="480px">
+    <el-drawer v-model="showLogs" title="工具调用记录" size="480px">
       <el-table :data="recentLogs" size="small" stripe>
-        <el-table-column prop="toolName" label="工具" width="140" />
-        <el-table-column prop="argsSummary" label="参数" show-overflow-tooltip />
+        <el-table-column label="工具" width="120">
+          <template #default="{ row }">{{ toolLabel(row.toolName) }}</template>
+        </el-table-column>
+        <el-table-column label="参数" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatToolArgs(row.argsSummary) || row.argsSummary }}</template>
+        </el-table-column>
         <el-table-column prop="resultSummary" label="结果" show-overflow-tooltip />
-        <el-table-column prop="durationMs" label="耗时" width="70" />
+        <el-table-column label="耗时" width="80">
+          <template #default="{ row }">{{ row.durationMs }} 毫秒</template>
+        </el-table-column>
       </el-table>
     </el-drawer>
   </main>
@@ -272,6 +313,32 @@ function onKeydown(e: KeyboardEvent) {
 .tool-calls {
   margin-top: 8px;
   text-align: left;
+}
+
+.tool-details {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #606266;
+}
+
+.tool-details summary {
+  cursor: pointer;
+  color: #909399;
+  user-select: none;
+}
+
+.references {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  text-align: left;
+}
+
+.ref-hint {
+  margin-left: 6px;
+  color: #909399;
+  font-size: 12px;
 }
 
 .tool-call {

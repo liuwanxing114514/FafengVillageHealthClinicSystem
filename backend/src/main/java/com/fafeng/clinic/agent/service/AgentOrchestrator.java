@@ -3,6 +3,7 @@ package com.fafeng.clinic.agent.service;
 import com.fafeng.clinic.agent.dto.AgentChatRequest;
 import com.fafeng.clinic.agent.tool.ClinicAgentTools;
 import com.fafeng.clinic.agent.vo.AgentChatResponseVO;
+import com.fafeng.clinic.agent.vo.AgentReferenceVO;
 import com.fafeng.clinic.agent.vo.AgentToolCallVO;
 import com.fafeng.clinic.agent.vo.PendingActionVO;
 import com.fafeng.clinic.ai.client.AiChatClient;
@@ -32,6 +33,7 @@ public class AgentOrchestrator {
     private final ClinicAgentTools clinicAgentTools;
     private final AgentToolCallContext callContext;
     private final AgentExecutionLogService executionLogService;
+    private final AgentReferenceExtractor referenceExtractor;
 
     public AgentChatResponseVO chat(AgentChatRequest request) {
         if (!externalServiceConfigService.isChatEnabled()) {
@@ -56,7 +58,8 @@ public class AgentOrchestrator {
 
             List<AgentToolCallVO> toolCalls = new ArrayList<>();
             List<PendingActionVO> pendingActions = new ArrayList<>();
-            for (AgentToolCallContext.ToolCallRecord record : callContext.getRecords()) {
+            List<AgentToolCallContext.ToolCallRecord> records = callContext.getRecords();
+            for (AgentToolCallContext.ToolCallRecord record : records) {
                 executionLogService.log(
                         sessionId,
                         record.toolName(),
@@ -83,7 +86,8 @@ public class AgentOrchestrator {
             if (answer.isBlank()) {
                 answer = "抱歉，暂时无法完成该查询，请换个方式提问或手动操作。";
             }
-            return new AgentChatResponseVO(sessionId, answer, toolCalls, pendingActions);
+            List<AgentReferenceVO> references = referenceExtractor.extract(records);
+            return new AgentChatResponseVO(sessionId, answer, toolCalls, pendingActions, references);
         } finally {
             callContext.clear();
         }

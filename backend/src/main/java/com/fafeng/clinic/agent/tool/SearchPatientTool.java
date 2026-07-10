@@ -29,7 +29,7 @@ public class SearchPatientTool implements AgentTool {
 
     @Override
     public String description() {
-        return "按姓名、电话或身份证号搜索患者。参数：keyword";
+        return "搜索或列出患者（按更新时间倒序）。参数：keyword（可选）、page、size；问最近一位患者时不传 keyword，page=1 size=1";
     }
 
     @Override

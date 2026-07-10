@@ -1,5 +1,6 @@
 package com.fafeng.clinic.agent.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fafeng.clinic.agent.tool.AgentToolResult;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +30,8 @@ public class AgentToolCallContext {
                 result.summary(),
                 durationMs,
                 result.success(),
-                result.pendingDraftId()));
+                result.pendingDraftId(),
+                result.data()));
     }
 
     public List<ToolCallRecord> getRecords() {
@@ -42,7 +44,8 @@ public class AgentToolCallContext {
             String resultSummary,
             long durationMs,
             boolean success,
-            Long pendingDraftId
+            Long pendingDraftId,
+            JsonNode data
     ) {
     }
 }

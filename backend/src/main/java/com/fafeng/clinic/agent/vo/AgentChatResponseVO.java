@@ -6,6 +6,7 @@ public record AgentChatResponseVO(
         String sessionId,
         String answer,
         List<AgentToolCallVO> toolCalls,
-        List<PendingActionVO> pendingActions
+        List<PendingActionVO> pendingActions,
+        List<AgentReferenceVO> references
 ) {
 }
