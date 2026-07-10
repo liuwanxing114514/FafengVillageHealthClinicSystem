@@ -96,6 +96,16 @@ public class ExternalServiceConfigService {
         return snapshot.getOrDefault(ExternalService.CODE_OCR, ServiceSnapshot.disabled()).endpointUrl();
     }
 
+    public String getOcrMode() {
+        ServiceSnapshot ocr = snapshot.getOrDefault(ExternalService.CODE_OCR, ServiceSnapshot.disabled());
+        return OcrServiceOptions.parseMode(ocr.optionsJson());
+    }
+
+    public String getOcrVisionModel() {
+        ServiceSnapshot ocr = snapshot.getOrDefault(ExternalService.CODE_OCR, ServiceSnapshot.disabled());
+        return OcrServiceOptions.parseVisionModel(ocr.optionsJson());
+    }
+
     public ServiceSnapshot getSnapshot(String serviceCode) {
         return snapshot.getOrDefault(serviceCode, ServiceSnapshot.disabled());
     }
@@ -105,35 +115,47 @@ public class ExternalServiceConfigService {
     }
 
     private ServiceSnapshot bootstrapChat() {
-        return new ServiceSnapshot(ExternalService.CODE_CHAT, aiProperties.isEnabled(), "");
+        return new ServiceSnapshot(ExternalService.CODE_CHAT, aiProperties.isEnabled(), "", "{}");
     }
 
     private ServiceSnapshot bootstrapEmbedding() {
-        return new ServiceSnapshot(ExternalService.CODE_EMBEDDING, embeddingProperties.isEnabled(), "");
+        return new ServiceSnapshot(ExternalService.CODE_EMBEDDING, embeddingProperties.isEnabled(), "", "{}");
     }
 
     private ServiceSnapshot bootstrapWhisper() {
         String url = voiceProperties.getWhisperUrl() == null ? "" : voiceProperties.getWhisperUrl().trim();
         boolean enabled = !url.isBlank();
-        return new ServiceSnapshot(ExternalService.CODE_WHISPER, enabled, url);
+        return new ServiceSnapshot(ExternalService.CODE_WHISPER, enabled, url, "{}");
     }
 
     private ServiceSnapshot bootstrapOcr() {
         String url = ocrProperties.getOcrUrl() == null ? "" : ocrProperties.getOcrUrl().trim();
-        boolean enabled = !url.isBlank();
-        return new ServiceSnapshot(ExternalService.CODE_OCR, enabled, url);
+        String mode = ocrProperties.resolveMode();
+        String visionModel = ocrProperties.getVisionModel() == null || ocrProperties.getVisionModel().isBlank()
+                ? OcrServiceOptions.DEFAULT_VISION_MODEL
+                : ocrProperties.getVisionModel().trim();
+        boolean enabled = OcrServiceOptions.MODE_LOCAL.equals(mode)
+                ? !url.isBlank()
+                : aiProperties.isEnabled();
+        String optionsJson = OcrServiceOptions.toJson(mode, visionModel);
+        return new ServiceSnapshot(ExternalService.CODE_OCR, enabled, url, optionsJson);
     }
 
-    public record ServiceSnapshot(String serviceCode, boolean enabled, String endpointUrl) {
+    public record ServiceSnapshot(String serviceCode, boolean enabled, String endpointUrl, String optionsJson) {
         static ServiceSnapshot disabled() {
-            return new ServiceSnapshot("", false, "");
+            return new ServiceSnapshot("", false, "", "{}");
         }
 
         static ServiceSnapshot fromDb(ExternalService row) {
+            String options = row.getOptionsJson();
+            if (options == null || options.isBlank()) {
+                options = "{}";
+            }
             return new ServiceSnapshot(
                     row.getServiceCode(),
                     Boolean.TRUE.equals(row.getEnabled()),
-                    row.getEndpointUrl() == null ? "" : row.getEndpointUrl());
+                    row.getEndpointUrl() == null ? "" : row.getEndpointUrl(),
+                    options);
         }
     }
 }

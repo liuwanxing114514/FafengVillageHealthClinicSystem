@@ -4,5 +4,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record UpdateExternalServiceRequest(
         @NotNull Boolean enabled,
-        String endpointUrl) {
+        String endpointUrl,
+        String ocrMode,
+        String visionModel) {
 }

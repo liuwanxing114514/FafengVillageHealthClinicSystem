@@ -6,6 +6,7 @@ import com.fafeng.clinic.ai.client.ResilientEmbeddingModel;
 import com.fafeng.clinic.ai.client.WhisperClient;
 import com.fafeng.clinic.ai.client.OcrClient;
 import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
+import com.fafeng.clinic.ai.config.OcrServiceOptions;
 import com.fafeng.clinic.ai.dto.UpdateExternalServiceRequest;
 import com.fafeng.clinic.ai.entity.ExternalService;
 import com.fafeng.clinic.ai.mapper.ExternalServiceMapper;
@@ -69,12 +70,7 @@ public class ExternalServiceService {
                 externalServiceConfigService.getWhisperUrl(),
                 whisperClient.isConfigured(),
                 0));
-        services.put(ExternalService.CODE_OCR, buildItem(
-                ExternalService.CODE_OCR,
-                externalServiceConfigService.isOcrEnabled(),
-                externalServiceConfigService.getOcrUrl(),
-                ocrClient.isConfigured(),
-                0));
+        services.put(ExternalService.CODE_OCR, buildOcrItem());
         return new ExternalServicesOverviewVO(
                 services,
                 externalServiceConfigService.isDbBacked(),
@@ -92,10 +88,21 @@ public class ExternalServiceService {
             row.setServiceCode(serviceCode);
             row.setEnabled(false);
             row.setEndpointUrl("");
+            row.setOptionsJson("{}");
         }
         row.setEnabled(Boolean.TRUE.equals(request.enabled()));
         if (request.endpointUrl() != null) {
             row.setEndpointUrl(request.endpointUrl().trim());
+        }
+        if (ExternalService.CODE_OCR.equals(serviceCode)) {
+            String existing = row.getOptionsJson();
+            String mode = request.ocrMode() != null ? request.ocrMode() : externalServiceConfigService.getOcrMode();
+            String visionModel = request.visionModel() != null
+                    ? request.visionModel()
+                    : externalServiceConfigService.getOcrVisionModel();
+            row.setOptionsJson(OcrServiceOptions.merge(existing, mode, visionModel));
+        } else if (row.getOptionsJson() == null || row.getOptionsJson().isBlank()) {
+            row.setOptionsJson("{}");
         }
         row.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));
         if (externalServiceMapper.selectById(serviceCode) == null) {
@@ -112,16 +119,17 @@ public class ExternalServiceService {
     private void ensureDbInitializedIfNeeded() {
         if (!externalServiceConfigService.isDbBacked()) {
             OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-            insertIfMissing(ExternalService.CODE_CHAT, externalServiceConfigService.isChatEnabled(), "", now);
-            insertIfMissing(ExternalService.CODE_EMBEDDING, externalServiceConfigService.isEmbeddingEnabled(), "", now);
+            insertIfMissing(ExternalService.CODE_CHAT, externalServiceConfigService.isChatEnabled(), "", "{}", now);
+            insertIfMissing(ExternalService.CODE_EMBEDDING, externalServiceConfigService.isEmbeddingEnabled(), "", "{}", now);
             insertIfMissing(ExternalService.CODE_WHISPER, externalServiceConfigService.isWhisperEnabled(),
-                    externalServiceConfigService.getWhisperUrl(), now);
+                    externalServiceConfigService.getWhisperUrl(), "{}", now);
             insertIfMissing(ExternalService.CODE_OCR, externalServiceConfigService.isOcrEnabled(),
-                    externalServiceConfigService.getOcrUrl(), now);
+                    externalServiceConfigService.getOcrUrl(),
+                    externalServiceConfigService.getSnapshot(ExternalService.CODE_OCR).optionsJson(), now);
         }
     }
 
-    private void insertIfMissing(String code, boolean enabled, String endpointUrl, OffsetDateTime now) {
+    private void insertIfMissing(String code, boolean enabled, String endpointUrl, String optionsJson, OffsetDateTime now) {
         if (externalServiceMapper.selectById(code) != null) {
             return;
         }
@@ -129,13 +137,25 @@ public class ExternalServiceService {
         row.setServiceCode(code);
         row.setEnabled(enabled);
         row.setEndpointUrl(endpointUrl == null ? "" : endpointUrl);
+        row.setOptionsJson(optionsJson == null || optionsJson.isBlank() ? "{}" : optionsJson);
         row.setUpdatedAt(now);
         externalServiceMapper.insert(row);
     }
 
+    private ExternalServiceItemVO buildOcrItem() {
+        return new ExternalServiceItemVO(
+                ExternalService.CODE_OCR,
+                externalServiceConfigService.isOcrEnabled(),
+                externalServiceConfigService.getOcrUrl(),
+                ocrClient.isConfigured(),
+                0,
+                externalServiceConfigService.getOcrMode(),
+                externalServiceConfigService.getOcrVisionModel());
+    }
+
     private ExternalServiceItemVO buildItem(String code, boolean enabled, String endpointUrl,
                                             boolean configured, int channelCount) {
-        return new ExternalServiceItemVO(code, enabled, endpointUrl == null ? "" : endpointUrl, configured, channelCount);
+        return new ExternalServiceItemVO(code, enabled, endpointUrl == null ? "" : endpointUrl, configured, channelCount, null, null);
     }
 
     private void validateCode(String serviceCode) {

@@ -82,20 +82,24 @@
 
 ### 4.3 OCR 进货单 / 发票 / 送货单（v1.4，T1 已确认）
 
-单据 OCR 文本在送 DeepSeek 整理前，对下列内容**同样执行 4.1 规则**：
+**按行选择性脱敏**（`common.Desensitizer.desensitizeInboundDocument`）：仅含 `联系人|电话|手机|地址|传真|邮编|单位|供应商` 等关键词的**行**执行 4.1；药品表格行（批号、数量、单价等）**原文保留**。
 
-- 供应商联系人姓名
+应脱敏行内字段：
+
+- 供应商联系人姓名（若行内出现）
 - 供应商电话、手机
 - 含门牌的详细地址
 - 单据上出现的身份证号
 
 **可原文发送**：药品名、规格、数量、单价、金额、批号、有效期、单据编号、日期。
 
+进货单整理请求经一次专用脱敏后，`ChatClient` 链**跳过** `DesensitizationAdvisor` 二次处理（`skipDesensitization=true`）。
+
 ### 4.4 实现要求
 
-- 后端统一 `Desensitizer` 工具类，发送 API 前对字符串与结构化字段逐字段处理。
-- 脱敏仅作用于**出站请求**；数据库仍存原文，草稿确认页展示**原文**供医生核对。
-- 单元测试覆盖：姓名、手机、住址门牌、身份证、混合正文各至少一例。
+- 进货单：`desensitizeInboundDocument`；病历/Agent：沿用 `ai.util.Desensitizer` + `DesensitizationAdvisor`。
+- 脱敏仅作用于**出站请求**；数据库与 `ai_draft.payload.ocrText` 仍存 OCR **原文**。
+- 单元测试覆盖：进货单行保留批号/单价、头行电话脱敏各至少一例。
 
 ### 4.5 示例
 
@@ -115,7 +119,8 @@
 | --- | --- | --- |
 | DeepSeek API | v1.3 / v2.0.2 | Spring AI `ChatClient`（OpenAI 兼容），无独立容器 |
 | Whisper | v1.1 | `whisper-service` 容器 |
-| PaddleOCR | v1.4 | `ocr-service` 容器 |
+| PaddleOCR | v1.4 | `ocr-service` 容器（`local` 模式） |
+| Vision OCR | v1.4+ | 硅基流动等多模态 API（`vision` 模式，仅图片→文本） |
 | pgvector | v2.2 | PostgreSQL 扩展 + `visit_embedding` 表 |
 | 硅基流动 Embedding | v2.2 | `BAAI/bge-m3`，OpenAI 兼容 `/v1/embeddings` |
 
@@ -184,7 +189,7 @@ Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → Spring AI `Chat
 
 | 表 | 用途 |
 | --- | --- |
-| `external_service` | Chat/Embedding/Whisper/OCR 总开关 + Whisper/OCR URL |
+| `external_service` | Chat/Embedding/Whisper/OCR 总开关 + Whisper/OCR URL + OCR `options_json`（`mode`/`visionModel`） |
 | `ai_chat_channel` | 对话模型多通道（priority、api_key_enc） |
 | `ai_embedding_channel` | 向量模型多通道（含 dimensions 一致性校验） |
 
@@ -233,6 +238,19 @@ CLINIC_SETTINGS_ENCRYPTION_KEY=
 
 **向量化**：`CLINIC_EMBEDDING_ENABLED=false` 时不影响基础业务；BGE 模型勿传 `dimensions` 参数给 API。
 
+### 7.3 OCR 混合模式与硅基流动模型（设置页配置）
+
+**用户何时选择**：设置 → 外部服务 → 进货单识别，保存后全局生效；入库页只读展示当前模式。
+
+| 阶段 | 用途 | 硅基流动推荐模型 |
+| --- | --- | --- |
+| ① 图片→文本 | Vision OCR（`options_json.visionModel`） | **`Pro/Qwen/Qwen2.5-VL-7B-Instruct`**（默认） |
+| ① 备选 | 复杂/模糊单据 | `Qwen/Qwen2.5-VL-32B-Instruct` |
+| ② 文本→JSON | 整理入库草稿（对话通道） | **`deepseek-ai/DeepSeek-V4-Pro`**（勿换成 VL） |
+
+- `local`：需 `CLINIC_OCR_URL` + `--profile ocr`
+- `vision`：复用对话通道 API Key，`base_url` 为 `https://api.siliconflow.cn`（勿带 `/v1`）
+
 详见 [`.env.example`](../../.env.example) 与系统设置页「AI 外部服务」。
 
 ---
@@ -253,3 +271,4 @@ CLINIC_SETTINGS_ENCRYPTION_KEY=
 | v2.2 | `visit_embedding`、脱敏向量化、`VisitEmbeddingService`、硅基流动/本地 Embedding API |
 | v2.3 | 相似病例检索：`VisitSimilaritySearchService`、病历页 `SimilarVisitPanel` |
 | v2.5 | AI 外部服务 DB 管理：`external_service`、多通道 Chat/Embedding、`ResilientAiChatClient`、设置页配置与热刷新 |
+| v1.4+ | 进货单按行脱敏 `desensitizeInboundDocument`；OCR `local`/`vision` 混合；`external_service.options_json` |

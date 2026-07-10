@@ -2,6 +2,7 @@ package com.fafeng.clinic.ai.client;
 
 import com.fafeng.clinic.ai.channel.ChannelRegistry;
 import com.fafeng.clinic.ai.channel.ChatChannelConfig;
+import com.fafeng.clinic.ai.channel.ChatChannelFactory;
 import com.fafeng.clinic.ai.channel.ChatChannelRuntime;
 import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,12 +31,14 @@ class ResilientAiChatClientFallbackTest {
     private ExternalServiceConfigService externalServiceConfigService;
     @Mock
     private ChannelRegistry channelRegistry;
+    @Mock
+    private ChatChannelFactory chatChannelFactory;
 
     private ResilientAiChatClient client;
 
     @BeforeEach
     void setUp() {
-        client = new ResilientAiChatClient(externalServiceConfigService, channelRegistry);
+        client = new ResilientAiChatClient(externalServiceConfigService, channelRegistry, chatChannelFactory);
     }
 
     @Test

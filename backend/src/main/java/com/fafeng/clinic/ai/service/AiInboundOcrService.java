@@ -3,6 +3,7 @@ package com.fafeng.clinic.ai.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fafeng.clinic.ai.client.OcrClient;
+import com.fafeng.clinic.ai.client.AiChatClient;
 import com.fafeng.clinic.ai.config.ClinicAiProperties;
 import com.fafeng.clinic.ai.config.ClinicOcrProperties;
 import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
@@ -37,6 +38,7 @@ public class AiInboundOcrService {
     private static final DateTimeFormatter FILE_TS = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private final OcrClient ocrClient;
+    private final AiChatClient aiChatClient;
     private final AiProvider activeAiProvider;
     private final ClinicAiProperties aiProperties;
     private final ExternalServiceConfigService externalServiceConfigService;
@@ -46,6 +48,7 @@ public class AiInboundOcrService {
     private final ObjectMapper objectMapper;
 
     public AiInboundOcrService(OcrClient ocrClient,
+                               AiChatClient aiChatClient,
                                AiProvider activeAiProvider,
                                ClinicAiProperties aiProperties,
                                ExternalServiceConfigService externalServiceConfigService,
@@ -54,6 +57,7 @@ public class AiInboundOcrService {
                                MedicineService medicineService,
                                ObjectMapper objectMapper) {
         this.ocrClient = ocrClient;
+        this.aiChatClient = aiChatClient;
         this.activeAiProvider = activeAiProvider;
         this.aiProperties = aiProperties;
         this.externalServiceConfigService = externalServiceConfigService;
@@ -64,7 +68,11 @@ public class AiInboundOcrService {
     }
 
     public OcrStatusVO getStatus() {
-        return new OcrStatusVO(ocrClient.isConfigured(), ocrClient.isConfigured());
+        return new OcrStatusVO(
+                ocrClient.isConfigured(),
+                ocrClient.isConfigured(),
+                externalServiceConfigService.getOcrMode(),
+                externalServiceConfigService.getOcrVisionModel());
     }
 
     public AiDraftVO recognizeInbound(MultipartFile file) {
@@ -82,8 +90,9 @@ public class AiInboundOcrService {
         String filename = file.getOriginalFilename() == null ? "inbound.jpg" : file.getOriginalFilename();
         String imagePath = saveImage(bytes, filename);
         String ocrText = ocrClient.recognize(bytes, filename, file.getContentType());
-        String desensitized = Desensitizer.desensitizeText(ocrText);
-        String structured = activeAiProvider.chatCompletion(aiProperties.getInboundStructurePrompt(), desensitized);
+        String desensitized = Desensitizer.desensitizeInboundDocument(ocrText);
+        String structured = aiChatClient.chatCompletion(
+                aiProperties.getInboundStructurePrompt(), desensitized, true);
 
         InboundDraftPayload payload = parseInboundPayload(structured);
         payload.setImagePath(imagePath);

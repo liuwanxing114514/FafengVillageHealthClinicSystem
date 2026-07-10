@@ -18,6 +18,7 @@ public class ExternalService {
     private String serviceCode;
     private Boolean enabled;
     private String endpointUrl;
+    private String optionsJson;
     private OffsetDateTime updatedAt;
 
     public String getServiceCode() {
@@ -42,6 +43,14 @@ public class ExternalService {
 
     public void setEndpointUrl(String endpointUrl) {
         this.endpointUrl = endpointUrl;
+    }
+
+    public String getOptionsJson() {
+        return optionsJson;
+    }
+
+    public void setOptionsJson(String optionsJson) {
+        this.optionsJson = optionsJson;
     }
 
     public OffsetDateTime getUpdatedAt() {

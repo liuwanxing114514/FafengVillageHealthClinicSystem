@@ -7,6 +7,8 @@ export interface AiStatus {
 export interface OcrStatus {
   configured: boolean
   available: boolean
+  mode?: string
+  visionModel?: string
 }
 
 export interface VoiceStatus {
@@ -134,6 +136,8 @@ export interface ExternalServiceItem {
   endpointUrl: string
   configured: boolean
   channelCount: number
+  ocrMode?: string | null
+  visionModel?: string | null
 }
 
 export interface ExternalServicesOverview {
