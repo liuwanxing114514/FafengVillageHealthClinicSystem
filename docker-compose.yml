@@ -11,6 +11,7 @@ services:
   postgres:
     image: ${POSTGRES_IMAGE:-docker.m.daocloud.io/pgvector/pgvector:pg16}
     container_name: clinic-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-clinic}
       POSTGRES_USER: ${POSTGRES_USER:-clinic}
@@ -32,6 +33,7 @@ services:
       args:
         REGISTRY_PREFIX: ${DOCKER_REGISTRY_PREFIX:-docker.m.daocloud.io}
     container_name: clinic-backend
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,6 +74,7 @@ services:
       args:
         REGISTRY_PREFIX: ${DOCKER_REGISTRY_PREFIX:-docker.m.daocloud.io}
     container_name: clinic-frontend
+    restart: unless-stopped
     depends_on:
       - backend
     ports:
