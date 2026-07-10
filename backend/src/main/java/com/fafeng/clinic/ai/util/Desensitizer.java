@@ -6,7 +6,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 出站 AI API 前脱敏。数据库与确认页仍使用原文。
+ * 出站调用外部 AI API 前脱敏（姓名/电话/身份证/住址等）。
+ *
+ * <p>数据库与人工确认页仍用原文；仅发往 DeepSeek/硅基等第三方的文本需经 {@link #desensitizeText}。
+ * Agent 用户问题、病历向量化拼接同理。
  */
 public final class Desensitizer {
 

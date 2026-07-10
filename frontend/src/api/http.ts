@@ -23,6 +23,10 @@ http.interceptors.response.use(
       ElMessage.error('未登录或会话已过期')
     } else if (body?.message) {
       ElMessage.error(body.message)
+    } else if (error.code === 'ERR_CANCELED' || error.name === 'CanceledError') {
+      // 用户主动取消，不重复提示
+    } else if (error.code === 'ECONNABORTED' || String(error.message ?? '').includes('timeout')) {
+      ElMessage.error('请求超时，AI 可能仍在处理或上游较忙，请稍后重试')
     } else {
       ElMessage.error('网络错误，请稍后重试')
     }

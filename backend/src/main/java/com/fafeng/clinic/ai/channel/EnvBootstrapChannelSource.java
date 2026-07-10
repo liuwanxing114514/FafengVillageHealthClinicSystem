@@ -8,6 +8,10 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 通道配置来源：数据库无通道行时，从 {@code DEEPSEEK_*}/{@code CLINIC_EMBEDDING_*} 构造虚拟通道。
+ * Chat 主通道 priority=1，{@code DEEPSEEK_FALLBACK_*} 为 priority=2（可选）。
+ */
 @Component
 public class EnvBootstrapChannelSource implements ChannelSource {
 

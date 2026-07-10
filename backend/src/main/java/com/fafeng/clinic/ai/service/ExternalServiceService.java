@@ -24,6 +24,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 设置页：四类外部服务（Chat/Embedding/Whisper/OCR）开关与 URL。
+ *
+ * <p>首次在设置页切换开关时，若 DB 尚无 {@code external_service} 行，会按当前 env 快照初始化四行，
+ * 之后改开关只影响 DB，不再读 env。
+ */
 @Service
 @RequiredArgsConstructor
 public class ExternalServiceService {

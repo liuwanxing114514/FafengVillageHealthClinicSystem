@@ -1,13 +1,18 @@
 package com.fafeng.clinic.ai.controller;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -19,10 +24,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@TestPropertySource(properties = {
+        "clinic.ai.enabled=false",
+        "clinic.ai.provider=noop"
+})
 class AiControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ExternalServiceConfigService externalServiceConfigService;
+
+    @BeforeEach
+    void resetAiServiceFlags() {
+        jdbcTemplate.update("DELETE FROM external_service");
+        jdbcTemplate.update("DELETE FROM ai_chat_channel");
+        jdbcTemplate.update("DELETE FROM ai_embedding_channel");
+        externalServiceConfigService.refresh();
+    }
 
     @Test
     @WithMockUser(username = "admin")

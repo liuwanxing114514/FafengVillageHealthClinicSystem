@@ -1,3 +1,4 @@
+/** AI 相关 REST 封装：状态、草稿、RAG、设置页通道与外部服务（/api/ai/*） */
 import { getData, postData, putData } from '@/api/http'
 import http from '@/api/http'
 import type {

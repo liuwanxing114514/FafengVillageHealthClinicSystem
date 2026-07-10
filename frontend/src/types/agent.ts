@@ -75,3 +75,6 @@ export const EXAMPLE_PROMPTS = [
 ] as const
 
 export const DRAFT_STORAGE_KEY = 'clinic-agent-draft'
+
+/** 侧栏本地草稿会话 id（仅前端，不落库） */
+export const DRAFT_CONVERSATION_ID = '__draft__'

@@ -46,12 +46,18 @@ public class AgentOrchestrator {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 服务不可用，请检查配置");
         }
 
-        String conversationId = conversationService.resolveConversationId(request.sessionId());
+        String conversationId = normalizeSessionId(request.sessionId());
+        if (conversationId != null) {
+            conversationService.resolveConversationId(conversationId);
+        }
+
         String userMessage = request.message().trim();
         String desensitizedMessage = Desensitizer.desensitizeText(userMessage, Desensitizer.PatientContext.empty());
 
         int historyLimit = Math.max(properties.getAgentMaxRounds(), 1) * 2;
-        List<Message> history = conversationService.loadRecentHistory(conversationId, historyLimit);
+        List<Message> history = conversationId != null
+                ? conversationService.loadRecentHistory(conversationId, historyLimit)
+                : List.of();
 
         callContext.activate();
         privacyCollector.activate();
@@ -61,6 +67,11 @@ public class AgentOrchestrator {
                     history,
                     desensitizedMessage,
                     clinicAgentTools);
+
+            // 新会话须在写工具日志前分配 id（agent_execution_log.session_id NOT NULL）
+            if (conversationId == null) {
+                conversationId = conversationService.createConversation();
+            }
 
             List<AgentToolCallContext.ToolCallRecord> records = callContext.getRecords();
             List<AgentToolCallVO> toolCalls = buildToolCalls(conversationId);
@@ -90,6 +101,13 @@ public class AgentOrchestrator {
             callContext.clear();
             privacyCollector.clear();
         }
+    }
+
+    private String normalizeSessionId(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return null;
+        }
+        return sessionId.trim();
     }
 
     private List<AgentToolCallVO> buildToolCalls(String sessionId) {

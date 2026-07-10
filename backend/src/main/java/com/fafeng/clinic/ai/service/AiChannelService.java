@@ -36,6 +36,13 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
+/**
+ * 设置页：AI 对话/向量通道 CRUD、排序、测试、从 env 导入。
+ *
+ * <p>写库后调用 {@link com.fafeng.clinic.ai.channel.ChannelRegistry#refresh()} 与
+ * {@link com.fafeng.clinic.ai.config.ExternalServiceConfigService#refresh()} 热更新，无需重启。
+ * API Key 经 {@link com.fafeng.clinic.ai.config.SecretEncryptor} 加密存储；列表/详情响应脱敏。
+ */
 @Service
 @RequiredArgsConstructor
 public class AiChannelService {

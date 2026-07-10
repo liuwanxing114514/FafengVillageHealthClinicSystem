@@ -12,7 +12,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 四类外部服务开关与 Whisper/OCR URL；DB 优先，表空时 bootstrap 读 env。
+ * 四类外部服务开关与 Whisper/OCR URL 的运行时快照。
+ *
+ * <p><b>优先级：</b>{@code external_service} 表有任意一行 → 只读 DB；表空 → 从
+ * {@link ClinicAiProperties} / {@link ClinicEmbeddingProperties} 等 bootstrap（对应 .env）。
+ * 设置页首次改开关时会写入 DB（见 {@link com.fafeng.clinic.ai.service.ExternalServiceService}），此后以 DB 为准。
+ *
+ * <p>业务层应用 {@link #isChatEnabled()} 等判断，而不是直接读 env。
  */
 @Service
 public class ExternalServiceConfigService {

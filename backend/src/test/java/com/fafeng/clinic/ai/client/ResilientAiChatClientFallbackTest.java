@@ -72,6 +72,8 @@ class ResilientAiChatClientFallbackTest {
     void fallbackEligibleForSiliconFlowBusyCode() {
         assertTrue(AiClientExceptionMapper.isFallbackEligible(
                 new NonTransientAiException("429 - {\"code\":50609,\"message\":\"System is too busy now.\"}")));
+        assertTrue(AiClientExceptionMapper.isFallbackEligible(
+                new NonTransientAiException("503 - {\"code\":50508,\"message\":\"System is too busy now. Please try again later.\"}")));
     }
 
     private void stubChannels(ChatClient primary, ChatClient fallback) {

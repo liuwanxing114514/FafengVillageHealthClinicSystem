@@ -12,6 +12,10 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * 通道配置来源：DB 表 {@code ai_chat_channel} / {@code ai_embedding_channel}。
+ * API Key 列为 AES 密文，经 {@link com.fafeng.clinic.ai.config.SecretEncryptor} 解密后仅用于构建客户端，不出日志。
+ */
 @Component
 public class DbChannelSource implements ChannelSource {
 

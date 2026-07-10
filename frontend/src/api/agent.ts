@@ -1,4 +1,5 @@
-import { deleteData, getData, postData } from '@/api/http'
+import http, { deleteData, getData } from '@/api/http'
+import type { ApiResult } from '@/types/api'
 import type {
   AgentChatResponse,
   AgentConversation,
@@ -6,8 +7,23 @@ import type {
   AgentMessageRecord,
 } from '@/types/agent'
 
-export async function postAgentChat(message: string, sessionId?: string): Promise<AgentChatResponse> {
-  return postData<AgentChatResponse>('/agent/chat', { message, sessionId })
+/** Agent 含工具调用与多轮 LLM，需长于默认 15s */
+const AGENT_CHAT_TIMEOUT_MS = 120_000
+
+export async function postAgentChat(
+  message: string,
+  sessionId?: string,
+  signal?: AbortSignal,
+): Promise<AgentChatResponse> {
+  const { data } = await http.post<ApiResult<AgentChatResponse>>(
+    '/agent/chat',
+    { message, sessionId },
+    { timeout: AGENT_CHAT_TIMEOUT_MS, signal },
+  )
+  if (data.code !== 0) {
+    throw data
+  }
+  return data.data
 }
 
 export async function getAgentConversations(limit = 50): Promise<AgentConversation[]> {

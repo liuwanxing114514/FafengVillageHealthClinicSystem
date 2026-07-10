@@ -18,7 +18,7 @@ public final class AiChannelFailoverPolicy {
     }
 
     private static boolean isRateLimited(String msg) {
-        return containsAny(msg, "429", "rate limiting", "50609", "too busy");
+        return containsAny(msg, "429", "rate limiting", "50609", "50508", "too busy", "system is too busy");
     }
 
     private static String messageOf(Exception ex) {

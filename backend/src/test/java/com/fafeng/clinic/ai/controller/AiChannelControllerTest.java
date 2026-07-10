@@ -3,8 +3,10 @@ package com.fafeng.clinic.ai.controller;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.fafeng.clinic.ai.channel.ChannelRegistry;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
@@ -24,6 +26,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "clinic.ai.deepseek-api-key=test-key-for-list"
 })
 class AiChannelControllerTest {
+
+    /** 避免启动时从 dev 库解密历史通道密钥导致 ApplicationContext 加载失败 */
+    @MockBean
+    private ChannelRegistry channelRegistry;
 
     @Autowired
     private MockMvc mockMvc;

@@ -26,7 +26,7 @@ import {
 import AgentToolResultCard from '@/components/agent/AgentToolResultCard.vue'
 import type { AiStatus } from '@/types/ai'
 import type { AgentConversation, AgentReference, ChatMessage } from '@/types/agent'
-import { DRAFT_STORAGE_KEY, EXAMPLE_PROMPTS } from '@/types/agent'
+import { DRAFT_CONVERSATION_ID, DRAFT_STORAGE_KEY, EXAMPLE_PROMPTS } from '@/types/agent'
 import { buildFollowUpChips, type FollowUpChip } from '@/utils/agentFollowUpChips'
 import {
   formatDisplayToolArgs,
@@ -52,6 +52,32 @@ const recentLogs = ref<Awaited<ReturnType<typeof getAgentLogs>>>([])
 const messagesEl = ref<HTMLElement | null>(null)
 const inputRef = ref<{ focus: () => void } | null>(null)
 const sidebarOpen = ref(false)
+/** 本地草稿会话（点「新建」后出现，首条消息成功发送或切走即消失） */
+const draftActive = ref(false)
+/** 防止「新建」清 URL 时 route watch 误拉回旧会话 */
+const skipRouteConversationLoad = ref(false)
+
+interface SidebarConversation extends AgentConversation {
+  isDraft?: boolean
+}
+
+const sidebarItems = computed((): SidebarConversation[] => {
+  const items: SidebarConversation[] = []
+  if (draftActive.value) {
+    items.push({
+      id: DRAFT_CONVERSATION_ID,
+      title: '新对话',
+      messageCount: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isDraft: true,
+    })
+  }
+  for (const c of conversations.value) {
+    items.push({ ...c, isDraft: false })
+  }
+  return items
+})
 
 const aiReady = computed(() => status.value?.enabled && status.value?.providerAvailable)
 const statusLabel = computed(() => {
@@ -60,14 +86,33 @@ const statusLabel = computed(() => {
 })
 const showCharCount = computed(() => input.value.length > 1800)
 const emptyHint = computed(() => {
-  if (conversations.value.length > 0 && !sessionId.value && messages.value.length === 0) {
+  if (draftActive.value && messages.value.length === 0) {
+    return '输入问题开始新对话，或点击下方示例'
+  }
+  if (conversations.value.length > 0 && !sessionId.value && !draftActive.value && messages.value.length === 0) {
     return '从左侧选择会话，或点击「新建对话」'
   }
   return '点击下方示例开始提问，或直接输入问题'
 })
 
+function isConversationActive(item: SidebarConversation): boolean {
+  if (item.isDraft) {
+    return draftActive.value && !sessionId.value
+  }
+  return sessionId.value === item.id
+}
+
+function onSidebarItemClick(item: SidebarConversation) {
+  if (item.isDraft) {
+    selectDraft()
+  } else {
+    selectConversation(item.id)
+  }
+}
+
 let mediaRecorder: MediaRecorder | null = null
 let audioChunks: Blob[] = []
+let chatAbortController: AbortController | null = null
 
 function focusInput() {
   nextTick(() => inputRef.value?.focus())
@@ -109,8 +154,14 @@ function recordToChatMessages(
 }
 
 async function selectConversation(id: string) {
+  draftActive.value = false
   sessionId.value = id
-  await router.replace({ path: '/ai', query: { c: id } })
+  skipRouteConversationLoad.value = true
+  try {
+    await router.replace({ path: '/ai', query: { c: id } })
+  } finally {
+    skipRouteConversationLoad.value = false
+  }
   loading.value = true
   try {
     const records = await getAgentMessages(id)
@@ -125,10 +176,36 @@ async function selectConversation(id: string) {
   }
 }
 
-function newConversation() {
+async function selectDraft() {
+  if (draftActive.value && !sessionId.value) {
+    sidebarOpen.value = false
+    focusInput()
+    return
+  }
+  draftActive.value = true
   sessionId.value = undefined
   messages.value = []
-  router.replace({ path: '/ai' })
+  skipRouteConversationLoad.value = true
+  try {
+    await router.replace({ path: '/ai', query: {} })
+  } finally {
+    skipRouteConversationLoad.value = false
+  }
+  sidebarOpen.value = false
+  focusInput()
+}
+
+async function newConversation() {
+  draftActive.value = true
+  sessionId.value = undefined
+  messages.value = []
+  skipRouteConversationLoad.value = true
+  try {
+    await router.replace({ path: '/ai', query: {} })
+  } finally {
+    skipRouteConversationLoad.value = false
+  }
+  sidebarOpen.value = false
   focusInput()
 }
 
@@ -170,13 +247,21 @@ async function sendText(text: string, isRetry = false) {
 
   input.value = ''
   localStorage.removeItem(DRAFT_STORAGE_KEY)
+  chatAbortController?.abort()
+  chatAbortController = new AbortController()
   sending.value = true
   scrollToBottom()
 
   try {
-    const response = await postAgentChat(trimmed, sessionId.value)
+    const response = await postAgentChat(trimmed, sessionId.value, chatAbortController.signal)
+    draftActive.value = false
     sessionId.value = response.sessionId
-    await router.replace({ path: '/ai', query: { c: response.sessionId } })
+    skipRouteConversationLoad.value = true
+    try {
+      await router.replace({ path: '/ai', query: { c: response.sessionId } })
+    } finally {
+      skipRouteConversationLoad.value = false
+    }
     messages.value.push({
       role: 'assistant',
       content: response.answer,
@@ -186,17 +271,24 @@ async function sendText(text: string, isRetry = false) {
     })
     await loadConversations()
   } catch (err: unknown) {
-    const msg = (err as { message?: string })?.message ?? '请求失败'
-    ElMessage.error(msg)
-    const last = messages.value[messages.value.length - 1]
-    if (last?.role === 'user') {
-      last.failed = true
+    const canceled = (err as { code?: string; name?: string }).code === 'ERR_CANCELED'
+      || (err as { name?: string }).name === 'CanceledError'
+    if (!canceled) {
+      const last = messages.value[messages.value.length - 1]
+      if (last?.role === 'user') {
+        last.failed = true
+      }
     }
   } finally {
+    chatAbortController = null
     sending.value = false
     scrollToBottom()
     focusInput()
   }
+}
+
+function cancelSend() {
+  chatAbortController?.abort()
 }
 
 function sendMessage() {
@@ -323,6 +415,7 @@ watch(input, (val) => {
 watch(
   () => route.query.c,
   async (c) => {
+    if (skipRouteConversationLoad.value) return
     if (typeof c === 'string' && c && c !== sessionId.value) {
       await selectConversation(c)
     }
@@ -360,16 +453,17 @@ onMounted(async () => {
         </el-button>
         <div class="conv-list">
           <div
-            v-for="conv in conversations"
+            v-for="conv in sidebarItems"
             :key="conv.id"
             class="conv-item"
-            :class="{ active: sessionId === conv.id }"
-            @click="selectConversation(conv.id)"
+            :class="{ active: isConversationActive(conv), draft: conv.isDraft }"
+            @click="onSidebarItemClick(conv)"
           >
             <div class="conv-title">{{ conv.title }}</div>
             <div class="conv-meta">
-              <span>{{ formatRelativeTime(conv.updatedAt) }}</span>
+              <span>{{ conv.isDraft ? '草稿' : formatRelativeTime(conv.updatedAt) }}</span>
               <el-button
+                v-if="!conv.isDraft"
                 link
                 type="danger"
                 :icon="Delete"
@@ -378,7 +472,7 @@ onMounted(async () => {
               />
             </div>
           </div>
-          <div v-if="conversations.length === 0" class="conv-empty">暂无历史会话</div>
+          <div v-if="sidebarItems.length === 0" class="conv-empty">暂无历史会话</div>
         </div>
       </aside>
 
@@ -407,7 +501,7 @@ onMounted(async () => {
         <div ref="messagesEl" class="messages">
           <div v-if="messages.length === 0" class="empty-block">
             <p class="empty-hint">{{ emptyHint }}</p>
-            <div v-if="!sessionId || conversations.length === 0" class="example-chips">
+            <div v-if="draftActive || !sessionId || conversations.length === 0" class="example-chips">
               <el-tag
                 v-for="ex in EXAMPLE_PROMPTS"
                 :key="ex"
@@ -513,7 +607,10 @@ onMounted(async () => {
             </template>
           </div>
 
-          <div v-if="sending" class="sending-hint">正在查询…</div>
+          <div v-if="sending" class="sending-hint">
+            正在查询…
+            <el-button link type="primary" size="small" @click="cancelSend">取消</el-button>
+          </div>
         </div>
 
         <div class="input-area">
@@ -556,16 +653,17 @@ onMounted(async () => {
       </el-button>
       <div class="conv-list">
         <div
-          v-for="conv in conversations"
+          v-for="conv in sidebarItems"
           :key="conv.id"
           class="conv-item"
-          :class="{ active: sessionId === conv.id }"
-          @click="selectConversation(conv.id)"
+          :class="{ active: isConversationActive(conv), draft: conv.isDraft }"
+          @click="onSidebarItemClick(conv)"
         >
           <div class="conv-title">{{ conv.title }}</div>
           <div class="conv-meta">
-            <span>{{ formatRelativeTime(conv.updatedAt) }}</span>
+            <span>{{ conv.isDraft ? '草稿' : formatRelativeTime(conv.updatedAt) }}</span>
             <el-button
+              v-if="!conv.isDraft"
               link
               type="danger"
               :icon="Delete"
@@ -636,6 +734,11 @@ onMounted(async () => {
 .conv-item:hover,
 .conv-item.active {
   background: #ecf5ff;
+}
+
+.conv-item.draft .conv-title {
+  color: #606266;
+  font-style: italic;
 }
 
 .conv-title {

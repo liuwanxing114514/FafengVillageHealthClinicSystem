@@ -11,6 +11,10 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * AI 相关 Spring 配置：注册 {@link com.fafeng.clinic.ai.provider.AiProvider}，
+ * {@code activeAiProvider} 在 Chat 开关关闭时强制 {@code noop}，避免误调用外部 API。
+ */
 @Configuration
 @EnableConfigurationProperties({ClinicAiProperties.class, ClinicVoiceProperties.class, ClinicOcrProperties.class, ClinicEmbeddingProperties.class})
 public class AiConfiguration {

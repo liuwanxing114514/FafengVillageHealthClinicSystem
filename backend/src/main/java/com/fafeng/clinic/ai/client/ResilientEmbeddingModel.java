@@ -17,6 +17,10 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 业务层使用的 Embedding 门面（{@code @Primary}，实现 Spring AI {@link EmbeddingModel}）。
+ * RAG 向量化与相似病例搜索注入本类；开关与通道链同 Chat。
+ */
 @Component
 @Primary
 public class ResilientEmbeddingModel implements EmbeddingModel {

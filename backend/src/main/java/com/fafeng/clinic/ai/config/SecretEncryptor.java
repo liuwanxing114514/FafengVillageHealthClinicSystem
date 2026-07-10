@@ -13,7 +13,10 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 /**
- * API Key AES-256-GCM 加密存储。主密钥来自 env {@code CLINIC_SETTINGS_ENCRYPTION_KEY}（Base64 32 字节）。
+ * 设置页 API Key 的 AES-256-GCM 加解密。
+ *
+ * <p>主密钥来自环境变量 {@code CLINIC_SETTINGS_ENCRYPTION_KEY}（Base64 解码须为 32 字节）。
+ * 未配置时 {@link #isEncryptionAvailable()} 为 false，设置页无法保存新 Key（env bootstrap 仍可用）。
  */
 @Component
 public class SecretEncryptor {

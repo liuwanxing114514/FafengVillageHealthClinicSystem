@@ -5,6 +5,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * 运行时 Chat / Embedding 通道链（内存快照）。
+ *
+ * <p>启动与设置页变更时 {@link #refresh()}：经 {@link EnvBootstrapChannelSource} 加载配置，
+ * 再由 Factory 建成 {@link ChatChannelRuntime} / {@link EmbeddingChannelRuntime} 列表。
+ * {@link com.fafeng.clinic.ai.client.ResilientAiChatClient} 按 priority 顺序调用，失败时 failover。
+ */
 @Component
 public class ChannelRegistry {
 

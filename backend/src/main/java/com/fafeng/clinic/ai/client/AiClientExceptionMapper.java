@@ -16,7 +16,7 @@ public final class AiClientExceptionMapper {
         String msg = messageOf(ex);
         if (isRateLimited(msg)) {
             return new BusinessException(ErrorCode.SERVICE_UNAVAILABLE,
-                    "AI 服务当前访问较多（限流），请稍后再试");
+                    "AI 服务当前较忙（DeepSeek 限流/拥堵），请稍后再试");
         }
         if (containsAny(msg, "401", "403", "invalid api key", "authentication")) {
             return new BusinessException(ErrorCode.SERVICE_UNAVAILABLE,
@@ -35,7 +35,7 @@ public final class AiClientExceptionMapper {
     }
 
     private static boolean isRateLimited(String msg) {
-        return containsAny(msg, "429", "rate limiting", "50609", "too busy");
+        return containsAny(msg, "429", "rate limiting", "50609", "50508", "too busy", "system is too busy");
     }
 
     private static String messageOf(Exception ex) {
