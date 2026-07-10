@@ -1,4 +1,5 @@
-FROM maven:3.9-eclipse-temurin-21 AS build
+ARG REGISTRY_PREFIX=docker.m.daocloud.io
+FROM ${REGISTRY_PREFIX}/library/maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY pom.xml .
 COPY backend/pom.xml backend/
@@ -7,7 +8,8 @@ RUN mvn -B -f pom.xml -pl backend dependency:go-offline
 COPY backend/src backend/src
 RUN mvn -B -f pom.xml -pl backend -Pdocker package -DskipTests
 
-FROM eclipse-temurin:21-jre
+ARG REGISTRY_PREFIX=docker.m.daocloud.io
+FROM ${REGISTRY_PREFIX}/eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/backend/target/*.jar app.jar
 EXPOSE 8080

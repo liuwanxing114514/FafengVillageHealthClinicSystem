@@ -183,16 +183,28 @@ Flyway **不会自动降级**；数据库回滚靠 pg_dump 备份。
 
 ```bash
 # 仅基础业务
-docker compose up -d --build
+sudo docker-compose -p clinic up -d --build
 
 # 基础 + OCR
-docker compose --profile ocr up -d --build
+sudo docker-compose -p clinic --profile ocr up -d --build
 
 # 不推荐：页面内 Whisper 录音
-docker compose --profile whisper up -d --build
+sudo docker-compose -p clinic --profile whisper up -d --build
 ```
 
-**群晖 DS920+**：若无 `docker compose` 子命令，用 `sudo docker-compose up -d --build`（连字符）。首次 build 较慢属正常；Dockerfile 已配置 Maven（阿里云）、npm（npmmirror）、pip（清华）国内镜像以加速 NAS 构建。
+**群晖 DS920+**：使用 **`sudo docker-compose`**（带连字符），不是 `docker compose`。首次 build 较慢属正常。
+
+**镜像加速（已写入 Dockerfile / compose，无需仅配 DSM 注册表）**：
+
+| 层级 | 配置 |
+| --- | --- |
+| Docker 基础镜像 FROM | `.env` 的 `DOCKER_REGISTRY_PREFIX`（默认 `docker.m.daocloud.io`） |
+| Maven | `backend/settings.xml` → 阿里云 |
+| npm | `frontend/Dockerfile` → npmmirror |
+| pip | `ocr-service/Dockerfile` → 清华 PyPI |
+| apt（OCR 容器） | `ocr-service/Dockerfile` → 清华 Debian 源 |
+
+海外或直连 Docker Hub 时，在 `.env` 设 `DOCKER_REGISTRY_PREFIX=docker.io`，并相应调整 `POSTGRES_IMAGE` / `WHISPER_IMAGE`（见 `.env.example` 注释）。
 
 ---
 
@@ -224,7 +236,7 @@ DEEPSEEK_API_KEY=
 CLINIC_AI_ENABLED=false
 CLINIC_AI_PROVIDER=noop
 DEEPSEEK_BASE_URL=https://api.siliconflow.cn
-DEEPSEEK_MODEL=deepseek-ai/DeepSeek-V3
+DEEPSEEK_MODEL=deepseek-ai/DeepSeek-V4-Pro
 CLINIC_EMBEDDING_ENABLED=false
 CLINIC_EMBEDDING_API_KEY=
 CLINIC_EMBEDDING_BASE_URL=https://api.siliconflow.cn

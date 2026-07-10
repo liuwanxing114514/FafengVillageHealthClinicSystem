@@ -203,6 +203,7 @@ Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → Spring AI `Chat
 CLINIC_AI_ENABLED=false
 CLINIC_AI_PROVIDER=noop
 DEEPSEEK_API_KEY=
+# 硅基流动：DEEPSEEK_BASE_URL=https://api.siliconflow.cn  DEEPSEEK_MODEL=deepseek-ai/DeepSeek-V4-Pro
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-chat
 DEEPSEEK_FALLBACK_API_KEY=

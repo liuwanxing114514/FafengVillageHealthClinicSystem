@@ -855,7 +855,11 @@ onMounted(() => {
           <p class="field-hint">密钥加密保存，页面仅显示末四位</p>
         </el-form-item>
         <el-form-item label="模型名称" required>
-          <el-input v-model="chatForm.model" placeholder="deepseek-chat" />
+          <el-input
+            v-model="chatForm.model"
+            placeholder="官方 deepseek-chat；硅基 deepseek-ai/DeepSeek-V4-Pro"
+          />
+          <p class="field-hint">硅基流动 Chat/Agent 请用 deepseek-ai/DeepSeek-V4-Pro（支持工具调用）</p>
         </el-form-item>
         <el-form-item label="优先级">
           <el-input-number v-model="chatForm.priority" :min="1" :max="99" />

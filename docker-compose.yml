@@ -1,14 +1,15 @@
 # 发凤村卫生室 — Docker Compose
 # 生产（群晖 DS920+）：默认仅 core 三服务
-#   docker compose up -d --build
-# 可选 OCR 入库：docker compose --profile ocr up -d --build
+#   sudo docker-compose -p clinic up -d --build
+# 可选 OCR 入库：sudo docker-compose -p clinic --profile ocr up -d --build
 # Whisper 默认不部署（手机用输入法语音）；若需页面内录音：
-#   docker compose --profile whisper up -d --build 且 CLINIC_WHISPER_URL=http://whisper-service:9000
+#   sudo docker-compose -p clinic --profile whisper up -d --build 且 CLINIC_WHISPER_URL=http://whisper-service:9000
+# 基础镜像默认走 DOCKER_REGISTRY_PREFIX（DaoCloud）；海外 NAS 可在 .env 设为 docker.io 并配官方 Hub
 # 详见 docs/共用/DEPLOYMENT.md
 
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: ${POSTGRES_IMAGE:-docker.m.daocloud.io/pgvector/pgvector:pg16}
     container_name: clinic-postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-clinic}
@@ -28,6 +29,8 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+      args:
+        REGISTRY_PREFIX: ${DOCKER_REGISTRY_PREFIX:-docker.m.daocloud.io}
     container_name: clinic-backend
     depends_on:
       postgres:
@@ -64,7 +67,10 @@ services:
       - "${BACKEND_PORT:-8080}:8080"
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        REGISTRY_PREFIX: ${DOCKER_REGISTRY_PREFIX:-docker.m.daocloud.io}
     container_name: clinic-frontend
     depends_on:
       - backend
@@ -73,7 +79,7 @@ services:
 
   # v1.1 可选（生产默认不启；手机请用输入法语音）：--profile whisper
   whisper-service:
-    image: onerahmet/openai-whisper-asr-webservice:latest
+    image: ${WHISPER_IMAGE:-docker.m.daocloud.io/onerahmet/openai-whisper-asr-webservice:latest}
     container_name: clinic-whisper
     profiles: ["whisper"]
     environment:
@@ -84,7 +90,10 @@ services:
 
   # v1.4 可选：docker compose --profile ocr up -d
   ocr-service:
-    build: ./ocr-service
+    build:
+      context: ./ocr-service
+      args:
+        REGISTRY_PREFIX: ${DOCKER_REGISTRY_PREFIX:-docker.m.daocloud.io}
     container_name: clinic-ocr
     profiles: ["ocr"]
     ports:

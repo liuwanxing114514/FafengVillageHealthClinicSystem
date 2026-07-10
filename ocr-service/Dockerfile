@@ -1,9 +1,18 @@
-FROM python:3.11-slim
+# REGISTRY_PREFIX：Docker Hub 加速前缀，compose 传入；默认 DaoCloud 镜像站
+ARG REGISTRY_PREFIX=docker.m.daocloud.io
+FROM ${REGISTRY_PREFIX}/library/python:3.11-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgomp1 libglib2.0-0 libsm6 libxext6 libxrender1 libgl1 \
+# Debian apt 国内源（与 pip 清华源配套，避免 apt-get 也走国外）
+RUN set -eux; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+      sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g; s|security.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+      sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g; s|security.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list; \
+    fi; \
+    apt-get update && apt-get install -y --no-install-recommends \
+      libgomp1 libglib2.0-0 libsm6 libxext6 libxrender1 libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
