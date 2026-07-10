@@ -172,7 +172,12 @@ export async function getExternalServices(): Promise<ExternalServicesOverview> {
 
 export async function updateExternalService(
   code: string,
-  payload: { enabled: boolean; endpointUrl?: string },
+  payload: {
+    enabled: boolean
+    endpointUrl?: string
+    ocrMode?: string
+    visionModel?: string
+  },
 ): Promise<ExternalServicesOverview['services'][string]> {
   return putData(`/ai/services/${code}`, payload)
 }

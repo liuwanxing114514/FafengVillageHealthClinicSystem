@@ -19,7 +19,7 @@ import org.springframework.web.client.RestClientException;
 import java.time.Duration;
 
 @Component
-public class HttpOcrClient implements OcrClient {
+public class HttpOcrClient {
 
     private static final Logger log = LoggerFactory.getLogger(HttpOcrClient.class);
 
@@ -39,14 +39,12 @@ public class HttpOcrClient implements OcrClient {
                 .build();
     }
 
-    @Override
     public boolean isConfigured() {
         return externalServiceConfigService.isOcrEnabled()
                 && resolveOcrUrl() != null
                 && !resolveOcrUrl().isBlank();
     }
 
-    @Override
     public String recognize(byte[] imageBytes, String filename, String contentType) {
         if (!isConfigured()) {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "OCR 服务未配置");

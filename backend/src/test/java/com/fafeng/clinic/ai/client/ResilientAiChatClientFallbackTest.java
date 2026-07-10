@@ -30,12 +30,14 @@ class ResilientAiChatClientFallbackTest {
     private ExternalServiceConfigService externalServiceConfigService;
     @Mock
     private ChannelRegistry channelRegistry;
+    @Mock
+    private ChatChannelFactory chatChannelFactory;
 
     private ResilientAiChatClient client;
 
     @BeforeEach
     void setUp() {
-        client = new ResilientAiChatClient(externalServiceConfigService, channelRegistry);
+        client = new ResilientAiChatClient(externalServiceConfigService, channelRegistry, chatChannelFactory);
     }
 
     @Test

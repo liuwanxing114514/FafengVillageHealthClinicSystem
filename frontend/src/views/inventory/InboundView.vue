@@ -14,6 +14,7 @@ const saving = ref(false)
 const ocrLoading = ref(false)
 const aiEnabled = ref(false)
 const ocrAvailable = ref(false)
+const ocrModeLabel = ref('')
 const medicineOptions = ref<MedicineListItem[]>([])
 const scanDialogVisible = ref(false)
 const scannedMedicine = ref<MedicineListItem | null>(null)
@@ -46,6 +47,10 @@ onMounted(async () => {
     const [aiStatus, ocrStatus] = await Promise.all([getAiStatus(), getOcrStatus()])
     aiEnabled.value = aiStatus.enabled && aiStatus.providerAvailable
     ocrAvailable.value = ocrStatus.available
+    ocrModeLabel.value =
+      ocrStatus.mode === 'local'
+        ? '本地 PaddleOCR'
+        : `云端 Vision（${ocrStatus.visionModel || 'VL 模型'}）`
   } catch {
     aiEnabled.value = false
     ocrAvailable.value = false
@@ -157,7 +162,7 @@ async function onSubmit() {
         type="info"
         :closable="false"
         show-icon
-        title="支持打印版清单、发票、送货单。识别后生成待审核表格，批准后才入库。"
+        :title="`支持打印版清单、发票、送货单。当前 OCR：${ocrModeLabel}。识别后生成待审核表格，批准后才入库。`"
         style="margin-bottom: 16px"
       />
       <el-space>

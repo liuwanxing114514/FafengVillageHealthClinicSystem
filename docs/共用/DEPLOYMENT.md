@@ -260,7 +260,7 @@ CLINIC_WHISPER_URL=
 | Chat / 整理 / Agent | `CLINIC_AI_ENABLED` | AI 对话与助手 | 外网 API | 基础业务正常 |
 | Embedding / RAG | `CLINIC_EMBEDDING_ENABLED` | 病历向量化 | API + pgvector | 相似病例空；同步禁用 |
 | Whisper 页面录音 | `CLINIC_WHISPER_URL` | 语音转写 + URL | whisper 容器 | 用手机输入法语音 |
-| OCR 入库 | `CLINIC_OCR_URL` | 进货单识别 + URL | ocr 容器 + Chat | OCR 入口不可用 |
+| OCR 入库 | `CLINIC_OCR_URL` + `clinic.ocr.mode` | 进货单识别 + 模式/URL | ocr 容器（local）或 Chat（vision） | OCR 入口不可用 |
 
 **AI 全关**：上述全部关闭时，系统应与 v1.0 基线同等稳定（断网可用基础业务）。
 

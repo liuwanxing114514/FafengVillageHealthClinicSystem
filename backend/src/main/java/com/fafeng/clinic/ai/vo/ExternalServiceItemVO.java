@@ -5,5 +5,7 @@ public record ExternalServiceItemVO(
         boolean enabled,
         String endpointUrl,
         boolean configured,
-        int channelCount) {
+        int channelCount,
+        String ocrMode,
+        String visionModel) {
 }

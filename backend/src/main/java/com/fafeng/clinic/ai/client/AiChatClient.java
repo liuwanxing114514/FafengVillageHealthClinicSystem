@@ -13,6 +13,10 @@ public interface AiChatClient {
 
     String chatCompletion(String systemPrompt, String userMessage);
 
+    default String chatCompletion(String systemPrompt, String userMessage, boolean skipDesensitization) {
+        return chatCompletion(systemPrompt, userMessage);
+    }
+
     String chatWithTools(String systemPrompt, String userMessage, Object toolSource);
 
     String chatWithTools(String systemPrompt, List<Message> history, String userMessage, Object toolSource);

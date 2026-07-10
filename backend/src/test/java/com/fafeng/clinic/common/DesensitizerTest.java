@@ -3,6 +3,7 @@ package com.fafeng.clinic.common;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DesensitizerTest {
 
@@ -29,9 +30,16 @@ class DesensitizerTest {
     }
 
     @Test
-    void desensitizeMixedText() {
-        String input = "患者张三，电话13812345678，住发凤村3组12号。主诉：咳嗽3天。";
-        String expected = "患者张三，电话138****5678，住发凤村3组**号。主诉：咳嗽3天。";
-        assertEquals(expected, Desensitizer.desensitizeText(input));
+    void desensitizeInboundDocumentPreservesMedicineLines() {
+        String input = """
+                联系人：张三 电话13812345678
+                地址：发凤村3组12号
+                阿莫西林胶囊 0.25g*24粒 数量100 批号13812345678 单价12.5
+                金额1250.00 有效期2026-12""";
+        String result = Desensitizer.desensitizeInboundDocument(input);
+        assertTrue(result.contains("联系人：张三 电话138****5678"));
+        assertTrue(result.contains("地址：发凤村3组**号"));
+        assertTrue(result.contains("阿莫西林胶囊 0.25g*24粒 数量100 批号13812345678 单价12.5"));
+        assertTrue(result.contains("金额1250.00 有效期2026-12"));
     }
 }

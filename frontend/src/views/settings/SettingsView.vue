@@ -89,6 +89,14 @@ const embeddingForm = reactive<SaveEmbeddingChannelPayload>({
 
 const whisperUrl = ref('')
 const ocrUrl = ref('')
+const ocrMode = ref<'local' | 'vision'>('vision')
+const ocrVisionModel = ref('Pro/Qwen/Qwen2.5-VL-7B-Instruct')
+
+const OCR_VISION_MODEL_OPTIONS = [
+  { label: 'Pro/Qwen/Qwen2.5-VL-7B-Instruct（推荐，4GB NAS）', value: 'Pro/Qwen/Qwen2.5-VL-7B-Instruct' },
+  { label: 'Qwen/Qwen2.5-VL-7B-Instruct', value: 'Qwen/Qwen2.5-VL-7B-Instruct' },
+  { label: 'Qwen/Qwen2.5-VL-32B-Instruct（更准，更贵）', value: 'Qwen/Qwen2.5-VL-32B-Instruct' },
+]
 
 const canSyncEmbedding = computed(
   () => Boolean(embeddingStatus.value?.enabled && embeddingStatus.value?.configured),
@@ -163,6 +171,8 @@ async function loadExternalServices() {
     externalServices.value = await getExternalServices()
     whisperUrl.value = serviceItem('whisper')?.endpointUrl ?? ''
     ocrUrl.value = serviceItem('ocr')?.endpointUrl ?? ''
+    ocrMode.value = serviceItem('ocr')?.ocrMode === 'local' ? 'local' : 'vision'
+    ocrVisionModel.value = serviceItem('ocr')?.visionModel || 'Pro/Qwen/Qwen2.5-VL-7B-Instruct'
   } catch {
     externalServices.value = null
   } finally {
@@ -187,9 +197,18 @@ async function loadChannels() {
 async function onToggleService(code: 'chat' | 'embedding' | 'whisper' | 'ocr', enabled: boolean) {
   serviceSaving.value = code
   try {
-    const payload: { enabled: boolean; endpointUrl?: string } = { enabled }
+    const payload: {
+      enabled: boolean
+      endpointUrl?: string
+      ocrMode?: string
+      visionModel?: string
+    } = { enabled }
     if (code === 'whisper') payload.endpointUrl = whisperUrl.value
-    if (code === 'ocr') payload.endpointUrl = ocrUrl.value
+    if (code === 'ocr') {
+      payload.endpointUrl = ocrUrl.value
+      payload.ocrMode = ocrMode.value
+      payload.visionModel = ocrVisionModel.value
+    }
     await updateExternalService(code, payload)
     ElMessage.success('已保存，立即生效')
     await Promise.all([loadExternalServices(), loadEmbeddingStatus()])
@@ -206,10 +225,20 @@ async function onSaveServiceUrl(code: 'whisper' | 'ocr') {
   }
   serviceSaving.value = code
   try {
-    await updateExternalService(code, {
+    const payload: {
+      enabled: boolean
+      endpointUrl?: string
+      ocrMode?: string
+      visionModel?: string
+    } = {
       enabled: true,
       endpointUrl: code === 'whisper' ? whisperUrl.value : ocrUrl.value,
-    })
+    }
+    if (code === 'ocr') {
+      payload.ocrMode = ocrMode.value
+      payload.visionModel = ocrVisionModel.value
+    }
+    await updateExternalService(code, payload)
     ElMessage.success('服务地址已保存')
     await loadExternalServices()
   } finally {
@@ -648,12 +677,34 @@ onMounted(() => {
         <div class="service-row service-row-url">
           <div class="service-info">
             <strong>进货单识别</strong>
+            <el-radio-group v-model="ocrMode" style="margin: 8px 0">
+              <el-radio value="vision">云端 Vision（推荐 4GB NAS，复用对话 API Key）</el-radio>
+              <el-radio value="local">本地 PaddleOCR（需 ocr-service 容器）</el-radio>
+            </el-radio-group>
+            <el-select
+              v-if="ocrMode === 'vision'"
+              v-model="ocrVisionModel"
+              placeholder="选择视觉模型"
+              class="url-input"
+              style="margin-bottom: 8px"
+            >
+              <el-option
+                v-for="opt in OCR_VISION_MODEL_OPTIONS"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </el-select>
+            <span v-if="ocrMode === 'vision'" class="hint">
+              图片识别用 VL 模型；整理 JSON 仍用上方「对话模型」的 DeepSeek-V4-Pro，勿把对话通道改成 VL。
+            </span>
             <el-input
+              v-if="ocrMode === 'local'"
               v-model="ocrUrl"
               placeholder="http://ocr-service:8000"
               class="url-input"
             />
-            <span class="hint">OCR 服务地址，留空表示不启用</span>
+            <span v-if="ocrMode === 'local'" class="hint">PaddleOCR 服务地址，留空表示不启用</span>
           </div>
           <div class="service-actions">
             <el-switch
@@ -662,7 +713,7 @@ onMounted(() => {
               @change="(v: boolean) => onToggleService('ocr', v)"
             />
             <el-button size="small" :loading="serviceSaving === 'ocr'" @click="onSaveServiceUrl('ocr')">
-              保存地址
+              保存配置
             </el-button>
           </div>
         </div>

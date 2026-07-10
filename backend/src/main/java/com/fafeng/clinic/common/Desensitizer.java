@@ -13,8 +13,34 @@ public final class Desensitizer {
     private static final Pattern ID_CARD = Pattern.compile("(?<![0-9])[1-9]\\d{5}(?:19|20)\\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\\d|3[01])\\d{3}[0-9Xx](?![0-9])");
     private static final Pattern ADDRESS_DETAIL = Pattern.compile(
             "([\\u4e00-\\u9fa5A-Za-z0-9]+(?:村|组|路|街|巷|道|里|弄|区|镇|乡|县|市|省))([0-9]+(?:号|栋|单元|室|楼)?[^\\s，,。；;]*)");
+    private static final Pattern INBOUND_SENSITIVE_LINE = Pattern.compile(
+            "联系人|电话|手机|地址|传真|邮编|单位|供货|供应商|联系");
 
     private Desensitizer() {
+    }
+
+    /**
+     * 进货单 OCR 专用：仅对含供应商联系人/电话/地址等关键词的行脱敏，药品表格行原文保留。
+     */
+    public static String desensitizeInboundDocument(String text) {
+        if (text == null || text.isBlank()) {
+            return text == null ? "" : text;
+        }
+        String normalized = text.replace("\r\n", "\n");
+        String[] lines = normalized.split("\n", -1);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < lines.length; i++) {
+            if (i > 0) {
+                sb.append('\n');
+            }
+            String line = lines[i];
+            if (INBOUND_SENSITIVE_LINE.matcher(line).find()) {
+                sb.append(desensitizeText(line));
+            } else {
+                sb.append(line);
+            }
+        }
+        return sb.toString();
     }
 
     public static String desensitizeText(String text) {

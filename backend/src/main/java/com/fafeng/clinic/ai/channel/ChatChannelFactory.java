@@ -39,6 +39,27 @@ public class ChatChannelFactory {
     }
 
     public ChatClient buildClient(ChatChannelConfig config) {
+        return buildClient(buildChatModel(config), true);
+    }
+
+    public ChatClient buildClientWithoutAdvisor(ChatChannelConfig config) {
+        return buildClient(buildChatModel(config), false);
+    }
+
+    public ChatClient buildClientWithModel(ChatChannelConfig config, String modelOverride) {
+        OpenAiChatModel chatModel = buildChatModel(withModel(config, modelOverride));
+        return buildClient(chatModel, false);
+    }
+
+    private ChatClient buildClient(OpenAiChatModel chatModel, boolean withAdvisor) {
+        var builder = ChatClient.builder(chatModel);
+        if (withAdvisor) {
+            builder.defaultAdvisors(desensitizationAdvisor);
+        }
+        return builder.build();
+    }
+
+    private OpenAiChatModel buildChatModel(ChatChannelConfig config) {
         String baseUrl = normalizeBaseUrl(config.baseUrl());
         OpenAiApi openAiApi = OpenAiApi.builder()
                 .baseUrl(baseUrl)
@@ -46,7 +67,7 @@ public class ChatChannelFactory {
                 .restClientBuilder(RestClient.builder().requestFactory(httpRequestFactory()))
                 .build();
         double temperature = config.temperature() == null ? 0.2 : config.temperature().doubleValue();
-        OpenAiChatModel chatModel = OpenAiChatModel.builder()
+        return OpenAiChatModel.builder()
                 .openAiApi(openAiApi)
                 .retryTemplate(singleAttemptRetryTemplate())
                 .defaultOptions(OpenAiChatOptions.builder()
@@ -54,9 +75,21 @@ public class ChatChannelFactory {
                         .temperature(temperature)
                         .build())
                 .build();
-        return ChatClient.builder(chatModel)
-                .defaultAdvisors(desensitizationAdvisor)
-                .build();
+    }
+
+    private static ChatChannelConfig withModel(ChatChannelConfig config, String modelOverride) {
+        if (modelOverride == null || modelOverride.isBlank()) {
+            return config;
+        }
+        return new ChatChannelConfig(
+                config.channelId(),
+                config.displayName(),
+                config.priority(),
+                config.enabled(),
+                config.baseUrl(),
+                config.apiKey(),
+                modelOverride.trim(),
+                config.temperature());
     }
 
     /** 503/限流等由多通道 failover 处理，单通道内不再 Spring 重试 10 次拖住 HTTP 响应 */
