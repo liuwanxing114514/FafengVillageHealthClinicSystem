@@ -36,7 +36,7 @@ class EnvBootstrapChannelSourceTest {
         when(dbChannelSource.hasDbChatChannels()).thenReturn(false);
         aiProperties.setDeepseekApiKey("primary-key");
         aiProperties.setDeepseekBaseUrl("https://api.siliconflow.cn");
-        aiProperties.setDeepseekModel("deepseek-ai/DeepSeek-V3");
+        aiProperties.setDeepseekModel("deepseek-ai/DeepSeek-V4-Pro");
         aiProperties.setDeepseekFallbackApiKey("fallback-key");
 
         List<ChatChannelConfig> channels = source.loadChatChannels();
