@@ -2,6 +2,7 @@ package com.fafeng.clinic.ai.client;
 
 import com.fafeng.clinic.ai.channel.ChannelRegistry;
 import com.fafeng.clinic.ai.channel.ChatChannelConfig;
+import com.fafeng.clinic.ai.channel.ChatChannelFactory;
 import com.fafeng.clinic.ai.channel.ChatChannelRuntime;
 import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
 import org.junit.jupiter.api.BeforeEach;
