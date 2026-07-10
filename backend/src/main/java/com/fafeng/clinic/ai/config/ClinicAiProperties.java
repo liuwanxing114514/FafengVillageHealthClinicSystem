@@ -10,6 +10,10 @@ public class ClinicAiProperties {
     private String deepseekApiKey = "";
     private String deepseekBaseUrl = "https://api.deepseek.com";
     private String deepseekModel = "deepseek-chat";
+    /** 主通道（如硅基流动）限流时，可选 DeepSeek 官方 API 兜底 */
+    private String deepseekFallbackApiKey = "";
+    private String deepseekFallbackBaseUrl = "https://api.deepseek.com";
+    private String deepseekFallbackModel = "deepseek-chat";
     private String localBaseUrl = "http://localhost:11434";
     private String visitStructurePrompt = """
             你是诊所病历整理助手。根据医生提供的自由文本，提取结构化字段。
@@ -73,6 +77,34 @@ public class ClinicAiProperties {
 
     public void setDeepseekModel(String deepseekModel) {
         this.deepseekModel = deepseekModel;
+    }
+
+    public String getDeepseekFallbackApiKey() {
+        return deepseekFallbackApiKey;
+    }
+
+    public void setDeepseekFallbackApiKey(String deepseekFallbackApiKey) {
+        this.deepseekFallbackApiKey = deepseekFallbackApiKey;
+    }
+
+    public String getDeepseekFallbackBaseUrl() {
+        return deepseekFallbackBaseUrl;
+    }
+
+    public void setDeepseekFallbackBaseUrl(String deepseekFallbackBaseUrl) {
+        this.deepseekFallbackBaseUrl = deepseekFallbackBaseUrl;
+    }
+
+    public String getDeepseekFallbackModel() {
+        return deepseekFallbackModel;
+    }
+
+    public void setDeepseekFallbackModel(String deepseekFallbackModel) {
+        this.deepseekFallbackModel = deepseekFallbackModel;
+    }
+
+    public boolean hasDeepseekFallback() {
+        return deepseekFallbackApiKey != null && !deepseekFallbackApiKey.isBlank();
     }
 
     public String getLocalBaseUrl() {

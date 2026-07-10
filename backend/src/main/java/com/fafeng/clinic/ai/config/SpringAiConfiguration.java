@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Primary;
 
 /**
  * Spring AI 条件装配：仅当 {@code clinic.ai.enabled=true} 且 {@code provider=deepseek} 时创建 ChatClient。
+ * 主通道失败（429/503 等）且配置了 {@code deepseek-fallback-api-key} 时，自动切换 DeepSeek 官方 API。
  */
 @Configuration
 @ConditionalOnExpression("${clinic.ai.enabled:false} == true and '${clinic.ai.provider:noop}' == 'deepseek'")
@@ -21,19 +22,10 @@ public class SpringAiConfiguration {
 
     @Bean
     public OpenAiChatModel clinicOpenAiChatModel(ClinicAiProperties properties) {
-        String baseUrl = properties.getDeepseekBaseUrl().trim().replaceAll("/+$", "");
-        String apiKey = properties.getDeepseekApiKey() == null ? "" : properties.getDeepseekApiKey().trim();
-        OpenAiApi openAiApi = OpenAiApi.builder()
-                .baseUrl(baseUrl)
-                .apiKey(apiKey)
-                .build();
-        return OpenAiChatModel.builder()
-                .openAiApi(openAiApi)
-                .defaultOptions(OpenAiChatOptions.builder()
-                        .model(properties.getDeepseekModel())
-                        .temperature(0.2)
-                        .build())
-                .build();
+        return buildChatModel(
+                properties.getDeepseekBaseUrl(),
+                properties.getDeepseekApiKey(),
+                properties.getDeepseekModel());
     }
 
     @Bean
@@ -45,7 +37,36 @@ public class SpringAiConfiguration {
 
     @Bean
     @Primary
-    public AiChatClient springAiChatClient(ClinicAiProperties properties, ChatClient clinicChatClient) {
-        return new SpringAiChatClient(properties, clinicChatClient);
+    public AiChatClient springAiChatClient(
+            ClinicAiProperties properties,
+            ChatClient clinicChatClient,
+            DesensitizationAdvisor desensitizationAdvisor) {
+        ChatClient fallbackClient = null;
+        if (properties.hasDeepseekFallback()) {
+            OpenAiChatModel fallbackModel = buildChatModel(
+                    properties.getDeepseekFallbackBaseUrl(),
+                    properties.getDeepseekFallbackApiKey(),
+                    properties.getDeepseekFallbackModel());
+            fallbackClient = ChatClient.builder(fallbackModel)
+                    .defaultAdvisors(desensitizationAdvisor)
+                    .build();
+        }
+        return new SpringAiChatClient(properties, clinicChatClient, fallbackClient);
+    }
+
+    private static OpenAiChatModel buildChatModel(String baseUrl, String apiKey, String model) {
+        String normalizedBaseUrl = baseUrl == null ? "" : baseUrl.trim().replaceAll("/+$", "");
+        String normalizedKey = apiKey == null ? "" : apiKey.trim();
+        OpenAiApi openAiApi = OpenAiApi.builder()
+                .baseUrl(normalizedBaseUrl)
+                .apiKey(normalizedKey)
+                .build();
+        return OpenAiChatModel.builder()
+                .openAiApi(openAiApi)
+                .defaultOptions(OpenAiChatOptions.builder()
+                        .model(model)
+                        .temperature(0.2)
+                        .build())
+                .build();
     }
 }

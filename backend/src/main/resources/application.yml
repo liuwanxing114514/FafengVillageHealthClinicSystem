@@ -48,6 +48,9 @@ clinic:
     deepseek-api-key: ${DEEPSEEK_API_KEY:}
     deepseek-base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
     deepseek-model: ${DEEPSEEK_MODEL:deepseek-chat}
+    deepseek-fallback-api-key: ${DEEPSEEK_FALLBACK_API_KEY:}
+    deepseek-fallback-base-url: ${DEEPSEEK_FALLBACK_BASE_URL:https://api.deepseek.com}
+    deepseek-fallback-model: ${DEEPSEEK_FALLBACK_MODEL:deepseek-chat}
     local-base-url: ${LOCAL_AI_BASE_URL:http://localhost:11434}
     embedding:
       enabled: ${CLINIC_EMBEDDING_ENABLED:false}
