@@ -192,6 +192,8 @@ docker compose --profile ocr up -d --build
 docker compose --profile whisper up -d --build
 ```
 
+**群晖 DS920+**：若无 `docker compose` 子命令，用 `sudo docker-compose up -d --build`（连字符）。首次 build 较慢属正常；Dockerfile 已配置 Maven（阿里云）、npm（npmmirror）、pip（清华）国内镜像以加速 NAS 构建。
+
 ---
 
 ## 七、分版本升级差异
