@@ -6,9 +6,15 @@ import type {
   ApproveInboundResult,
   ApproveOutboundLine,
   ApproveOutboundResult,
+  ChannelTestResult,
+  ChatChannel,
+  EmbeddingChannel,
+  ExternalServicesOverview,
   InboundDraftPayload,
   OcrStatus,
   OutboundDraftPayload,
+  SaveChatChannelPayload,
+  SaveEmbeddingChannelPayload,
   SimilarVisitSearchResult,
   VisitDraftPayload,
   VisitEmbeddingStatus,
@@ -157,4 +163,73 @@ export async function searchSimilarVisits(payload: {
   excludeVisitId?: number | null
 }): Promise<SimilarVisitSearchResult> {
   return postData<SimilarVisitSearchResult>('/ai/embeddings/search-similar', payload)
+}
+
+export async function getExternalServices(): Promise<ExternalServicesOverview> {
+  return getData<ExternalServicesOverview>('/ai/services')
+}
+
+export async function updateExternalService(
+  code: string,
+  payload: { enabled: boolean; endpointUrl?: string },
+): Promise<ExternalServicesOverview['services'][string]> {
+  return putData(`/ai/services/${code}`, payload)
+}
+
+export async function listChatChannels(): Promise<ChatChannel[]> {
+  return getData<ChatChannel[]>('/ai/channels/chat')
+}
+
+export async function createChatChannel(payload: SaveChatChannelPayload): Promise<ChatChannel> {
+  return postData<ChatChannel>('/ai/channels/chat', payload)
+}
+
+export async function updateChatChannel(
+  channelId: string,
+  payload: SaveChatChannelPayload,
+): Promise<ChatChannel> {
+  return putData<ChatChannel>(`/ai/channels/chat/${encodeURIComponent(channelId)}`, payload)
+}
+
+export async function deleteChatChannel(channelId: string): Promise<void> {
+  await http.delete(`/ai/channels/chat/${encodeURIComponent(channelId)}`)
+}
+
+export async function reorderChatChannels(channelIds: string[]): Promise<void> {
+  await putData('/ai/channels/chat/reorder', { channelIds })
+}
+
+export async function testChatChannel(channelId: string): Promise<ChannelTestResult> {
+  return postData<ChannelTestResult>(`/ai/channels/chat/${encodeURIComponent(channelId)}/test`, {})
+}
+
+export async function listEmbeddingChannels(): Promise<EmbeddingChannel[]> {
+  return getData<EmbeddingChannel[]>('/ai/channels/embedding')
+}
+
+export async function createEmbeddingChannel(payload: SaveEmbeddingChannelPayload): Promise<EmbeddingChannel> {
+  return postData<EmbeddingChannel>('/ai/channels/embedding', payload)
+}
+
+export async function updateEmbeddingChannel(
+  channelId: string,
+  payload: SaveEmbeddingChannelPayload,
+): Promise<EmbeddingChannel> {
+  return putData<EmbeddingChannel>(`/ai/channels/embedding/${encodeURIComponent(channelId)}`, payload)
+}
+
+export async function deleteEmbeddingChannel(channelId: string): Promise<void> {
+  await http.delete(`/ai/channels/embedding/${encodeURIComponent(channelId)}`)
+}
+
+export async function reorderEmbeddingChannels(channelIds: string[]): Promise<void> {
+  await putData('/ai/channels/embedding/reorder', { channelIds })
+}
+
+export async function testEmbeddingChannel(channelId: string): Promise<ChannelTestResult> {
+  return postData<ChannelTestResult>(`/ai/channels/embedding/${encodeURIComponent(channelId)}/test`, {})
+}
+
+export async function importAiChannelsFromEnv(): Promise<void> {
+  await postData('/ai/channels/import-from-env', {})
 }

@@ -2,7 +2,7 @@ package com.fafeng.clinic.ai.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fafeng.clinic.ai.config.ClinicVoiceProperties;
+import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
 import com.fafeng.clinic.common.BusinessException;
 import com.fafeng.clinic.common.ErrorCode;
 import org.slf4j.Logger;
@@ -23,12 +23,13 @@ public class HttpWhisperClient implements WhisperClient {
 
     private static final Logger log = LoggerFactory.getLogger(HttpWhisperClient.class);
 
-    private final ClinicVoiceProperties properties;
+    private final ExternalServiceConfigService externalServiceConfigService;
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
-    public HttpWhisperClient(ClinicVoiceProperties properties, ObjectMapper objectMapper) {
-        this.properties = properties;
+    public HttpWhisperClient(ExternalServiceConfigService externalServiceConfigService,
+                             ObjectMapper objectMapper) {
+        this.externalServiceConfigService = externalServiceConfigService;
         this.objectMapper = objectMapper;
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(5));
@@ -40,7 +41,9 @@ public class HttpWhisperClient implements WhisperClient {
 
     @Override
     public boolean isConfigured() {
-        return properties.isConfigured();
+        return externalServiceConfigService.isWhisperEnabled()
+                && resolveWhisperUrl() != null
+                && !resolveWhisperUrl().isBlank();
     }
 
     @Override
@@ -52,7 +55,7 @@ public class HttpWhisperClient implements WhisperClient {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "音频文件为空");
         }
 
-        String baseUrl = properties.getWhisperUrl().trim().replaceAll("/+$", "");
+        String baseUrl = resolveWhisperUrl().trim().replaceAll("/+$", "");
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new ByteArrayResource(audioBytes) {
             @Override
@@ -75,6 +78,10 @@ public class HttpWhisperClient implements WhisperClient {
             log.warn("Whisper transcription failed: {}", ex.getMessage());
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "语音转写服务暂不可用，请稍后重试或手动输入");
         }
+    }
+
+    private String resolveWhisperUrl() {
+        return externalServiceConfigService.getWhisperUrl();
     }
 
     private String parseText(String responseBody) {

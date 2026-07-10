@@ -2,7 +2,7 @@ package com.fafeng.clinic.ai.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fafeng.clinic.ai.config.ClinicOcrProperties;
+import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
 import com.fafeng.clinic.common.BusinessException;
 import com.fafeng.clinic.common.ErrorCode;
 import org.slf4j.Logger;
@@ -23,12 +23,13 @@ public class HttpOcrClient implements OcrClient {
 
     private static final Logger log = LoggerFactory.getLogger(HttpOcrClient.class);
 
-    private final ClinicOcrProperties properties;
+    private final ExternalServiceConfigService externalServiceConfigService;
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
-    public HttpOcrClient(ClinicOcrProperties properties, ObjectMapper objectMapper) {
-        this.properties = properties;
+    public HttpOcrClient(ExternalServiceConfigService externalServiceConfigService,
+                         ObjectMapper objectMapper) {
+        this.externalServiceConfigService = externalServiceConfigService;
         this.objectMapper = objectMapper;
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(10));
@@ -40,7 +41,9 @@ public class HttpOcrClient implements OcrClient {
 
     @Override
     public boolean isConfigured() {
-        return properties.isConfigured();
+        return externalServiceConfigService.isOcrEnabled()
+                && resolveOcrUrl() != null
+                && !resolveOcrUrl().isBlank();
     }
 
     @Override
@@ -52,7 +55,7 @@ public class HttpOcrClient implements OcrClient {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "图片文件为空");
         }
 
-        String baseUrl = properties.getOcrUrl().trim().replaceAll("/+$", "");
+        String baseUrl = resolveOcrUrl().trim().replaceAll("/+$", "");
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new ByteArrayResource(imageBytes) {
             @Override
@@ -73,6 +76,10 @@ public class HttpOcrClient implements OcrClient {
             log.warn("OCR recognition failed: {}", ex.getMessage());
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "OCR 服务暂不可用，请稍后重试或手动入库");
         }
+    }
+
+    private String resolveOcrUrl() {
+        return externalServiceConfigService.getOcrUrl();
     }
 
     private String parseText(String responseBody) {

@@ -69,6 +69,8 @@ clinic:
   ocr:
     ocr-url: ${CLINIC_OCR_URL:}
     upload-dir: ${CLINIC_OCR_UPLOAD_DIR:uploads/images}
+  settings:
+    encryption-key: ${CLINIC_SETTINGS_ENCRYPTION_KEY:}
 
 mybatis-plus:
   configuration:

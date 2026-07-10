@@ -127,3 +127,67 @@ export interface VisitEmbeddingSyncResult {
   failed: number
   durationMs: number
 }
+
+export interface ExternalServiceItem {
+  serviceCode: string
+  enabled: boolean
+  endpointUrl: string
+  configured: boolean
+  channelCount: number
+}
+
+export interface ExternalServicesOverview {
+  services: Record<string, ExternalServiceItem>
+  dbBacked: boolean
+  dbChatChannels: boolean
+  dbEmbeddingChannels: boolean
+}
+
+export interface ChatChannel {
+  channelId: string
+  displayName: string
+  priority: number
+  enabled: boolean
+  baseUrl: string
+  apiKeyMasked: string
+  model: string
+  temperature: number
+}
+
+export interface EmbeddingChannel {
+  channelId: string
+  displayName: string
+  priority: number
+  enabled: boolean
+  baseUrl: string
+  apiKeyMasked: string
+  model: string
+  dimensions: number
+}
+
+export interface SaveChatChannelPayload {
+  channelId: string
+  displayName: string
+  priority: number
+  enabled: boolean
+  baseUrl: string
+  apiKey?: string
+  model: string
+  temperature?: number
+}
+
+export interface SaveEmbeddingChannelPayload {
+  channelId: string
+  displayName: string
+  priority: number
+  enabled: boolean
+  baseUrl: string
+  apiKey?: string
+  model: string
+  dimensions: number
+}
+
+export interface ChannelTestResult {
+  success: boolean
+  message: string
+}

@@ -44,7 +44,8 @@ public class VoiceTranscriptionService {
     }
 
     public VoiceStatusVO getStatus() {
-        return new VoiceStatusVO(properties.isConfigured(), properties.isConfigured());
+        boolean configured = whisperClient.isConfigured();
+        return new VoiceStatusVO(configured, configured);
     }
 
     public VoiceTranscriptionVO transcribe(MultipartFile file) {

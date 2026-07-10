@@ -33,10 +33,13 @@
 | `NoopAiProvider` | v0.9 | 默认，空实现 |
 | `DeepSeekAiProvider` | v1.3 / v2.0.2 | 委托 `SpringAiChatClient` |
 | `LocalAiProvider` | 远期 | Ollama / 本地模型 |
-| `UnconfiguredAiChatClient` | v2.0.2 | AI 未启用时的占位 |
+| `SpringAiChatClient` | v2.0.2 | ~~已删除~~ v2.5 起由 `ResilientAiChatClient` 替代 |
+| `ResilientAiChatClient` | v2.5 | DB/env 多通道 Chat + failover |
+| `ResilientEmbeddingModel` | v2.5 | DB/env 多通道 Embedding + failover |
+| `ExternalServiceConfigService` | v2.5 | 四类外部服务开关（DB 优先 + env bootstrap） |
+| `ChannelRegistry` | v2.5 | Chat/Embedding 通道链热刷新 |
 | `VisitEmbeddingService` | v2.2 | 脱敏拼接 → Embedding → `visit_embedding` |
 | `VisitSimilaritySearchService` | v2.3 | 脱敏查询 → embed → pgvector 余弦 Top-3 |
-| `EmbeddingConfiguration` | v2.2 | 条件装配 `OpenAiEmbeddingModel`（openai/local） |
 
 ---
 
@@ -169,7 +172,30 @@ Agent 通过 `AgentOrchestrator` 编排：用户消息脱敏 → Spring AI `Chat
 
 ---
 
-## 7. 配置项（.env）
+## 7. 配置项（.env 与设置页）
+
+### 7.1 配置优先级（v2.5）
+
+1. **DB 无记录**：读 `.env` bootstrap（NAS 首次部署零改动）
+2. **DB 有记录**：完全走 DB；设置页保存后 `refresh()` 热生效，不必重启容器
+3. **加密主密钥** `CLINIC_SETTINGS_ENCRYPTION_KEY` **始终在 env**（设置页保存 API Key 时必需）
+
+表结构：
+
+| 表 | 用途 |
+| --- | --- |
+| `external_service` | Chat/Embedding/Whisper/OCR 总开关 + Whisper/OCR URL |
+| `ai_chat_channel` | 对话模型多通道（priority、api_key_enc） |
+| `ai_embedding_channel` | 向量模型多通道（含 dimensions 一致性校验） |
+
+管理 API（需 Session 登录）：
+
+- `GET/PUT /api/ai/services` — 外部服务总览与开关
+- `/api/ai/channels/chat` / `/embedding` — CRUD、reorder、test、import-from-env
+
+业务层仍只注入 `AiChatClient` / `EmbeddingModel` / `OcrClient` / `WhisperClient`。
+
+### 7.2 Legacy env（bootstrap，DB 空时用）
 
 **Chat / Agent**（可用 DeepSeek 官网或硅基流动 OpenAI 兼容地址）：
 
@@ -179,26 +205,34 @@ CLINIC_AI_PROVIDER=noop
 DEEPSEEK_API_KEY=
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_FALLBACK_API_KEY=
+DEEPSEEK_FALLBACK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_FALLBACK_MODEL=deepseek-chat
 ```
 
-**统一硅基流动（Chat + Embedding 同 Key，推荐生产与 IDEA 测试）**：
+**向量化**：
 
 ```env
-DEEPSEEK_BASE_URL=https://api.siliconflow.cn/v1
-DEEPSEEK_MODEL=deepseek-ai/DeepSeek-V3
-CLINIC_EMBEDDING_ENABLED=true
-CLINIC_EMBEDDING_PROVIDER=openai
+CLINIC_EMBEDDING_ENABLED=false
 CLINIC_EMBEDDING_API_KEY=
 CLINIC_EMBEDDING_BASE_URL=https://api.siliconflow.cn/v1
 CLINIC_EMBEDDING_MODEL=BAAI/bge-m3
 CLINIC_EMBEDDING_DIMENSIONS=1024
 ```
 
+**设置页加密主密钥**（在设置页保存 API Key 前配置）：
+
+```env
+CLINIC_SETTINGS_ENCRYPTION_KEY=
+```
+
+生成示例：`openssl rand -base64 32`
+
 **IDEA dev**：Spring Boot 不自动读 `.env`；Run Configuration 需 EnvFile 或手动环境变量。数据库见 `application-dev.yml`。
 
 **向量化**：`CLINIC_EMBEDDING_ENABLED=false` 时不影响基础业务；BGE 模型勿传 `dimensions` 参数给 API。
 
-详见 [`.env.example`](../../.env.example)。
+详见 [`.env.example`](../../.env.example) 与系统设置页「AI 外部服务」。
 
 ---
 
@@ -217,3 +251,4 @@ CLINIC_EMBEDDING_DIMENSIONS=1024
 | v2.1 | 处方→出库→打印：`approveOutbound`、处方页生成 OUTBOUND 草稿、`OutboundDraftView` 确认出库 |
 | v2.2 | `visit_embedding`、脱敏向量化、`VisitEmbeddingService`、硅基流动/本地 Embedding API |
 | v2.3 | 相似病例检索：`VisitSimilaritySearchService`、病历页 `SimilarVisitPanel` |
+| v2.5 | AI 外部服务 DB 管理：`external_service`、多通道 Chat/Embedding、`ResilientAiChatClient`、设置页配置与热刷新 |

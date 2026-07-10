@@ -1,17 +1,18 @@
 package com.fafeng.clinic.ai.client;
 
+import com.fafeng.clinic.ai.channel.AiChannelFailoverPolicy;
 import com.fafeng.clinic.common.BusinessException;
 import com.fafeng.clinic.common.ErrorCode;
 
 /**
  * 将 Spring AI / 上游 HTTP 异常转为对用户友好的业务异常。
  */
-final class AiClientExceptionMapper {
+public final class AiClientExceptionMapper {
 
     private AiClientExceptionMapper() {
     }
 
-    static BusinessException toBusinessException(Exception ex) {
+    public static BusinessException toBusinessException(Exception ex) {
         String msg = messageOf(ex);
         if (isRateLimited(msg)) {
             return new BusinessException(ErrorCode.SERVICE_UNAVAILABLE,
@@ -23,19 +24,14 @@ final class AiClientExceptionMapper {
         }
         if (containsAny(msg, "404", "model not found")) {
             return new BusinessException(ErrorCode.SERVICE_UNAVAILABLE,
-                    "AI 模型不可用，请检查 DEEPSEEK_MODEL 配置");
+                    "AI 模型不可用，请检查模型配置");
         }
         return new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 服务暂不可用，请稍后重试");
     }
 
-    /** 主通道失败时是否值得切换备用 DeepSeek 官方 API（限流/拥堵/短暂不可用）。 */
-    static boolean isFallbackEligible(Exception ex) {
-        String msg = messageOf(ex);
-        if (containsAny(msg, "401", "403", "invalid api key", "authentication")) {
-            return false;
-        }
-        return isRateLimited(msg)
-                || containsAny(msg, "502", "503", "504", "timeout", "timed out", "connection reset", "connection refused");
+    /** 主通道失败时是否值得切换备用 API（限流/拥堵/短暂不可用）。 */
+    public static boolean isFallbackEligible(Exception ex) {
+        return AiChannelFailoverPolicy.isFallbackEligible(ex);
     }
 
     private static boolean isRateLimited(String msg) {

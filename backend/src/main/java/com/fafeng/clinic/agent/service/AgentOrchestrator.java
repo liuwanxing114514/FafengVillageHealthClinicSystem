@@ -7,6 +7,7 @@ import com.fafeng.clinic.agent.vo.AgentToolCallVO;
 import com.fafeng.clinic.agent.vo.PendingActionVO;
 import com.fafeng.clinic.ai.client.AiChatClient;
 import com.fafeng.clinic.ai.config.ClinicAiProperties;
+import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
 import com.fafeng.clinic.ai.entity.AiDraft;
 import com.fafeng.clinic.ai.util.Desensitizer;
 import com.fafeng.clinic.common.BusinessException;
@@ -25,6 +26,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AgentOrchestrator {
 
+    private final ExternalServiceConfigService externalServiceConfigService;
     private final ClinicAiProperties properties;
     private final AiChatClient aiChatClient;
     private final ClinicAgentTools clinicAgentTools;
@@ -32,7 +34,7 @@ public class AgentOrchestrator {
     private final AgentExecutionLogService executionLogService;
 
     public AgentChatResponseVO chat(AgentChatRequest request) {
-        if (!properties.isEnabled()) {
+        if (!externalServiceConfigService.isChatEnabled()) {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 功能未启用");
         }
         if (!aiChatClient.isConfigured()) {

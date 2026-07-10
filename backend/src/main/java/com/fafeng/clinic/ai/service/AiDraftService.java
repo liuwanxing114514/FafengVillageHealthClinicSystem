@@ -2,7 +2,7 @@ package com.fafeng.clinic.ai.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fafeng.clinic.ai.config.ClinicAiProperties;
+import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
 import com.fafeng.clinic.agent.model.OutboundDraftPayload;
 import com.fafeng.clinic.ai.dto.ApproveOutboundDraftRequest;
 import com.fafeng.clinic.ai.dto.ApproveOutboundLineRequest;
@@ -58,20 +58,20 @@ public class AiDraftService {
     );
 
     private final AiDraftMapper draftMapper;
-    private final ClinicAiProperties properties;
+    private final ExternalServiceConfigService externalServiceConfigService;
     private final AiProvider activeAiProvider;
     private final InventoryService inventoryService;
     private final VisitService visitService;
     private final ObjectMapper objectMapper;
 
     public AiDraftService(AiDraftMapper draftMapper,
-                          ClinicAiProperties properties,
+                          ExternalServiceConfigService externalServiceConfigService,
                           AiProvider activeAiProvider,
                           InventoryService inventoryService,
                           VisitService visitService,
                           ObjectMapper objectMapper) {
         this.draftMapper = draftMapper;
-        this.properties = properties;
+        this.externalServiceConfigService = externalServiceConfigService;
         this.activeAiProvider = activeAiProvider;
         this.inventoryService = inventoryService;
         this.visitService = visitService;
@@ -80,7 +80,7 @@ public class AiDraftService {
 
     public AiStatusVO getStatus() {
         return new AiStatusVO(
-                properties.isEnabled(),
+                externalServiceConfigService.isChatEnabled(),
                 activeAiProvider.name(),
                 activeAiProvider.isAvailable()
         );

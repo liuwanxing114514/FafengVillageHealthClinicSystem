@@ -1,6 +1,8 @@
 package com.fafeng.clinic.ai.service;
 
-import com.fafeng.clinic.ai.config.ClinicEmbeddingProperties;
+import com.fafeng.clinic.ai.channel.ChannelRegistry;
+import com.fafeng.clinic.ai.client.ResilientEmbeddingModel;
+import com.fafeng.clinic.ai.config.ExternalServiceConfigService;
 import com.fafeng.clinic.ai.dto.SimilarVisitSearchRequest;
 import com.fafeng.clinic.ai.mapper.VisitEmbeddingMapper;
 import com.fafeng.clinic.ai.model.SimilarVisitMatchRow;
@@ -13,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -29,8 +30,9 @@ public class VisitSimilaritySearchService {
     private static final Logger log = LoggerFactory.getLogger(VisitSimilaritySearchService.class);
     private static final int TOP_K = 3;
 
-    private final ClinicEmbeddingProperties embeddingProperties;
-    private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
+    private final ExternalServiceConfigService externalServiceConfigService;
+    private final ResilientEmbeddingModel resilientEmbeddingModel;
+    private final ChannelRegistry channelRegistry;
     private final VisitEmbeddingMapper visitEmbeddingMapper;
     private final VisitEmbeddingTextBuilder textBuilder;
     private final PatientService patientService;
@@ -49,12 +51,12 @@ public class VisitSimilaritySearchService {
             return emptyResult(true);
         }
         try {
-            EmbeddingModel embeddingModel = embeddingModelProvider.getIfAvailable();
-            if (embeddingModel == null) {
-                return emptyResult(false);
-            }
+            EmbeddingModel embeddingModel = resilientEmbeddingModel;
             float[] vector = embeddingModel.embed(queryText);
-            VisitEmbeddingService.validateDimensions(vector, embeddingProperties.getDimensions());
+            int dimensions = channelRegistry.primaryEmbeddingConfig() != null
+                    ? channelRegistry.primaryEmbeddingConfig().dimensions()
+                    : resilientEmbeddingModel.dimensions();
+            VisitEmbeddingService.validateDimensions(vector, dimensions);
             String vectorLiteral = VisitEmbeddingService.toPgVectorLiteral(vector);
             List<SimilarVisitMatchRow> rows = visitEmbeddingMapper.searchSimilar(
                     vectorLiteral,
@@ -71,9 +73,8 @@ public class VisitSimilaritySearchService {
     }
 
     private boolean isSearchAvailable() {
-        return embeddingProperties.isEnabled()
-                && embeddingProperties.isConfigured()
-                && embeddingModelProvider.getIfAvailable() != null;
+        return externalServiceConfigService.isEmbeddingEnabled()
+                && resilientEmbeddingModel.isConfigured();
     }
 
     private Patient resolvePatient(Long patientId) {
@@ -88,11 +89,10 @@ public class VisitSimilaritySearchService {
     }
 
     private SimilarVisitVO toVo(SimilarVisitMatchRow row) {
-        double similarity = row.getSimilarity() == null ? 0.0 : row.getSimilarity();
         return new SimilarVisitVO(
                 row.getVisitId(),
                 row.getTextSummary(),
-                similarity,
+                row.getSimilarity() == null ? 0.0 : row.getSimilarity(),
                 row.getVisitTime());
     }
 
