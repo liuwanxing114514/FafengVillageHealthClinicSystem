@@ -10,7 +10,10 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 /**
- * Spring AI {@code @Tool} 注册层，业务逻辑复用 {@link AgentToolRegistry}。
+ * Spring AI {@code @Tool} 注册层：方法名即模型看到的工具名（如 {@code searchPatient}）。
+ *
+ * <p>业务逻辑在 {@link com.fafeng.clinic.agent.tool.AgentToolRegistry} 与各 *Tool 类，本类只做参数组装、
+ * 调用、格式化返回字符串给大模型，并写入 {@link com.fafeng.clinic.agent.service.AgentToolCallContext}。
  */
 @Component
 @RequiredArgsConstructor

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fafeng.clinic.agent.service.AgentPrivacyCollector;
 import com.fafeng.clinic.ai.util.Desensitizer;
 import com.fafeng.clinic.clinic.dto.VisitSearchQuery;
 import com.fafeng.clinic.clinic.service.VisitService;
@@ -22,13 +23,16 @@ public class SearchPatientVisitTool implements AgentTool {
     private final VisitService visitService;
     private final PatientService patientService;
     private final ObjectMapper objectMapper;
+    private final AgentPrivacyCollector privacyCollector;
 
     public SearchPatientVisitTool(VisitService visitService,
                                   PatientService patientService,
-                                  ObjectMapper objectMapper) {
+                                  ObjectMapper objectMapper,
+                                  AgentPrivacyCollector privacyCollector) {
         this.visitService = visitService;
         this.patientService = patientService;
         this.objectMapper = objectMapper;
+        this.privacyCollector = privacyCollector;
     }
 
     @Override
@@ -47,7 +51,6 @@ public class SearchPatientVisitTool implements AgentTool {
         String keyword = SearchMedicineTool.textArg(args, "keyword");
 
         if (patientId == null && (keyword == null || keyword.isBlank())) {
-            // 无患者条件时，按病历关键词搜索最近记录
             PageVO<VisitListItemVO> visits = visitService.search(
                     new VisitSearchQuery(keyword, null, null, null),
                     1,
@@ -61,12 +64,14 @@ public class SearchPatientVisitTool implements AgentTool {
                     1,
                     5);
             if (patients.records().isEmpty()) {
-                return AgentToolResult.fail("未找到患者：" + keyword);
+                return AgentToolResult.fail("未找到患者：" + Desensitizer.maskName(keyword));
             }
             if (patients.total() > 1) {
                 return AgentToolResult.fail("找到多位患者，请提供更精确的关键词或 patientId");
             }
-            patientId = patients.records().getFirst().id();
+            PatientListItemVO patient = patients.records().getFirst();
+            privacyCollector.recordPatient(patient.name(), patient.phone(), null, null);
+            patientId = patient.id();
         }
 
         List<VisitListItemVO> visits = visitService.listByPatient(patientId);
@@ -76,13 +81,18 @@ public class SearchPatientVisitTool implements AgentTool {
     private AgentToolResult buildVisitResult(List<VisitListItemVO> visits, long total, String label) {
         ArrayNode items = objectMapper.createArrayNode();
         for (VisitListItemVO visit : visits) {
+            privacyCollector.recordPatient(visit.patientName(), null, null, null);
+            Desensitizer.PatientContext ctx = Desensitizer.PatientContext.of(
+                    visit.patientName(), null, null, null);
             ObjectNode node = objectMapper.createObjectNode();
             node.put("visitId", visit.id());
             node.put("patientId", visit.patientId());
             node.put("patientName", Desensitizer.maskName(visit.patientName()));
             node.put("visitTime", visit.visitTime() == null ? "" : visit.visitTime().toString());
-            node.put("chiefComplaint", visit.chiefComplaint());
-            node.put("diagnosis", visit.diagnosis());
+            node.put("chiefComplaint", Desensitizer.desensitizeText(
+                    visit.chiefComplaint() == null ? "" : visit.chiefComplaint(), ctx));
+            node.put("diagnosis", Desensitizer.desensitizeText(
+                    visit.diagnosis() == null ? "" : visit.diagnosis(), ctx));
             items.add(node);
         }
 

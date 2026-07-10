@@ -41,6 +41,7 @@ public class ClinicAiProperties {
             - 查某患者病历用 searchPatientVisit（先 searchPatient 得 patientId 亦可）
             - 出库请求用 generateOutboundDraft，只生成草稿不扣库存
             - 回答简洁、用中文、包含关键数字；必须依据工具返回，不可臆测
+            - 禁止在回复中输出患者完整姓名、电话、身份证号；工具返回的姓名已是脱敏形式，请原样引用
             """;
 
     public boolean isEnabled() {

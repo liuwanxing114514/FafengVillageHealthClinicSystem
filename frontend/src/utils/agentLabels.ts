@@ -1,15 +1,16 @@
-/** Agent 工具与状态的中文展示 */
+/** Agent 工具名、Provider 的中文展示映射（仅 UI，不改后端协议）。 */
+
 export const AGENT_TOOL_LABELS: Record<string, string> = {
-  searchPatient: '查患者',
-  searchPatientVisit: '查病历',
   searchMedicine: '查药品',
   queryInventory: '查库存',
-  queryExpiringMedicine: '查临期药',
+  queryExpiringMedicine: '查临期',
+  searchPatient: '查患者',
+  searchPatientVisit: '查病历',
   generateOutboundDraft: '生成出库草稿',
 }
 
-export const AI_PROVIDER_LABELS: Record<string, string> = {
-  deepseek: '对话模型已就绪',
+const PROVIDER_LABELS: Record<string, string> = {
+  deepseek: 'DeepSeek',
   noop: '未启用',
   local: '本地模型',
 }
@@ -18,31 +19,30 @@ export function toolLabel(toolName: string): string {
   return AGENT_TOOL_LABELS[toolName] ?? toolName
 }
 
-export function providerLabel(provider: string, enabled: boolean): string {
-  if (!enabled) return '未启用'
-  return AI_PROVIDER_LABELS[provider] ?? '已连接'
+export function providerLabel(provider: string, available: boolean): string {
+  if (!available) return 'AI 不可用'
+  return PROVIDER_LABELS[provider] ?? provider
 }
 
-export function formatToolArgs(argsSummary: string): string {
-  if (!argsSummary?.trim()) return ''
+/** 将 args JSON 转为简短中文可读串 */
+export function formatToolArgs(argsSummary: string | undefined): string {
+  if (!argsSummary) return ''
   try {
-    const args = JSON.parse(argsSummary) as Record<string, unknown>
+    const obj = JSON.parse(argsSummary) as Record<string, unknown>
     const parts: string[] = []
-    if (typeof args.keyword === 'string' && args.keyword) {
-      parts.push(`关键词：${args.keyword}`)
-    }
-    if (typeof args.medicineName === 'string' && args.medicineName) {
-      parts.push(`药品：${args.medicineName}`)
-    }
-    if (typeof args.barcode === 'string' && args.barcode) {
-      parts.push(`条码：${args.barcode}`)
-    }
-    if (args.page != null || args.size != null) {
-      parts.push(`第 ${args.page ?? 1} 页，${args.size ?? 10} 条`)
-    }
-    if (parts.length > 0) return parts.join(' · ')
+    if (obj.keyword != null && String(obj.keyword)) parts.push(`关键词: ${obj.keyword}`)
+    if (obj.medicineName != null && String(obj.medicineName)) parts.push(`药品: ${obj.medicineName}`)
+    if (obj.medicineId != null) parts.push(`药品ID: ${obj.medicineId}`)
+    if (obj.patientId != null) parts.push(`患者ID: ${obj.patientId}`)
+    if (obj.page != null) parts.push(`页: ${obj.page}`)
+    if (obj.size != null) parts.push(`条数: ${obj.size}`)
+    return parts.join(' · ')
   } catch {
-    // 原样展示
+    return argsSummary.length > 80 ? argsSummary.slice(0, 80) + '…' : argsSummary
   }
-  return argsSummary
+}
+
+export function formatDisplayToolArgs(call: { displayArgsSummary?: string; argsSummary: string }): string {
+  const raw = call.displayArgsSummary ?? call.argsSummary
+  return formatToolArgs(raw) || raw
 }
