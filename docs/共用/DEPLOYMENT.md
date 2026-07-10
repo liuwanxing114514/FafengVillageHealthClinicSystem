@@ -3,7 +3,9 @@
 > **【NAS 生产部署 A+B — 后续 Agent 必读】**  
 > - 升级：`git pull` + GHCR `pull` + `up -d`；**不用传 tar 包**  
 > - 脚本：[`scripts/update.sh`](../../scripts/update.sh)；Windows：[`scripts/deploy-remote.ps1`](../../scripts/deploy-remote.ps1)  
-> - 镜像：`ghcr.io/liuwanxing114514/clinic-{backend,frontend}:sha-<commit>`（回退 `main`）  
+> - **发布**：仅 push `release/vX.Y.Z-prod` 触发 GHCR 构建（`main`/`develop` 不触发）  
+> - 镜像：`ghcr.io/liuwanxing114514/clinic-{backend,frontend}:sha-<commit>`（回退 `vX.Y.Z`）  
+> - NAS `.env`：`GIT_BRANCH=release/vX.Y.Z-prod`（换版本时改此项）  
 > - 升级前：**DSM 备份**；含 Flyway 禁止跳过；等 **Release Images** CI 绿勾  
 > - 仅 **core 三容器**；不部署本地 `ocr-service`（OCR 走设置页 Vision）  
 > - 回滚：`restore.sh` + 旧镜像 tag；**Flyway 不自动降级**
@@ -49,7 +51,7 @@
 | 内存 | 出厂 4GB 可跑 **core 三容器**；启用 OCR 或 Chat 建议 **8GB+** |
 | 存储 | 程序 + 数据建议 ≥ 50GB 可用空间 |
 | 编排 | SSH 执行 `./scripts/update.sh`（推荐）；或 Container Manager |
-| 镜像 | GHCR 预构建（[`.github/workflows/release-images.yml`](../../.github/workflows/release-images.yml)）；NAS **不 build** |
+| 镜像 | GHCR 预构建（[`.github/workflows/release-images.yml`](../../.github/workflows/release-images.yml)）；仅 `release/v*-prod` push 触发；NAS **不 build** |
 | 备份 | DSM **控制面板 → 任务计划**，每日执行 `scripts/backup.sh` |
 | HTTPS | **控制面板 → 登录门户 → 反向代理**（手机扫码、PWA 须 HTTPS） |
 
@@ -63,6 +65,20 @@
 | **不推荐** | `--profile ocr` / `--profile whisper` | 生产 OCR 用设置页 **Vision**；语音用手机输入法 |
 
 **Whisper 默认不部署**：页面内「语音」按钮在未配置时会提示手动输入；手机在 HTTPS 病历页聚焦文本框后，用搜狗/微信/系统键盘的**语音键**即可，无需 NAS 上跑 Whisper 容器。
+
+### 1.4 发布分支（GHCR 构建触发）
+
+日常 `develop` / `main` push **不会**触发镜像构建。准备上 NAS 时：
+
+```bash
+git checkout -b release/v3.1.0-prod    # 从待发布代码拉出
+git push -u origin release/v3.1.0-prod
+```
+
+- GitHub Actions **Release Images** 自动 build 并推 GHCR
+- 镜像 tag：`sha-<commit>` + `v3.1.0`（从分支名解析）
+- NAS `.env` 设 `GIT_BRANCH=release/v3.1.0-prod`
+- 换版本：新建 `release/v3.2.0-prod` → push → 改 NAS `GIT_BRANCH` → `update.sh`
 
 ---
 
@@ -85,14 +101,12 @@
    ```bash
    cd /volume1/docker/clinic
    cp .env.example .env
-   # 编辑：POSTGRES_PASSWORD、CLINIC_DATA_DIR=/volume1/clinic-data、FRONTEND_PORT 等
+   # 编辑：POSTGRES_PASSWORD、CLINIC_DATA_DIR=/volume1/clinic-data、FRONTEND_PORT、GIT_BRANCH=release/vX.Y.Z-prod 等
    ```
-5. 首次启动（拉 GHCR 镜像；需等 GitHub Actions **Release Images** 至少成功一次）：
+5. 首次启动（拉 GHCR 镜像；需先 push `release/vX.Y.Z-prod` 且 **Release Images** 绿勾）：
    ```bash
    chmod +x scripts/*.sh
-   export CLINIC_IMAGE_TAG=main
-   docker compose -p clinic pull backend frontend
-   docker compose -p clinic up -d
+   ./scripts/update.sh
    ```
    若 GHCR 尚无镜像，可临时：`docker compose -p clinic up -d --build`（仅首次应急）。
 6. 浏览器访问 `http://<NAS_IP>:8088`（或反代 HTTPS 域名）→ **`/setup` 设置管理员密码**（仅空库一次）。
@@ -147,17 +161,19 @@ cd /volume1/docker/clinic
 **适用**：系统已在运行，库内有真实业务数据。
 
 ```text
-1. 确认 GitHub Actions「Release Images」对本次 push 已成功（绿勾）
-2. 确认今日 DSM 备份已完成（clinic-daily-backup）
-3. SSH 到 NAS 执行：
+1. 从待发布代码创建并 push 发布分支：release/vX.Y.Z-prod
+2. 确认 GitHub Actions「Release Images」对本次 push 已成功（绿勾）
+3. NAS .env 设 GIT_BRANCH=release/vX.Y.Z-prod（换版本时改此项）
+4. 确认今日 DSM 备份已完成（clinic-daily-backup）
+5. SSH 到 NAS 执行：
      cd /volume1/docker/clinic
      ./scripts/update.sh
    或在 Windows 开发机：
      .\scripts\deploy-remote.ps1
-4. update.sh 自动：git pull → 按 commit 拉 sha 镜像 → compose up → 健康检查 → Flyway 日志
-5. diff .env.example .env → 仅追加缺失项（脚本会提示缺项）
-6. 浏览器冒烟：登录、核心页无 500
-7. 按该版本验收 + v1.0 基线回归
+6. update.sh 自动：git pull → 按 commit 拉 sha 镜像 → compose up → 健康检查 → Flyway 日志
+7. diff .env.example .env → 仅追加缺失项（脚本会提示缺项）
+8. 浏览器冒烟：登录、核心页无 500
+9. 按该版本验收 + v1.0 基线回归
 ```
 
 **Flyway 注意**：迁移在 backend 启动时自动执行；**升级前必须备份**；失败时用 `restore.sh` 恢复库，不能只换旧镜像。

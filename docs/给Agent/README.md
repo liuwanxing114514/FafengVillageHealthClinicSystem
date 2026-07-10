@@ -44,8 +44,10 @@
 | --- | --- |
 | 升级 | `git pull` + GHCR `pull` + `up -d`；**不用传 tar** |
 | 脚本 | NAS：`scripts/update.sh`；Windows：`scripts/deploy-remote.ps1` |
-| 镜像 | `ghcr.io/liuwanxing114514/clinic-{backend,frontend}:sha-<commit>` |
-| 时机 | push `main` 后等 **Release Images** CI 绿勾，再更新 NAS |
+| 发布分支 | 仅 `release/vX.Y.Z-prod` push 触发 GHCR；`main`/`develop` 不触发 |
+| 镜像 | `ghcr.io/liuwanxing114514/clinic-{backend,frontend}:sha-<commit>`（回退 `vX.Y.Z`） |
+| NAS `.env` | `GIT_BRANCH=release/vX.Y.Z-prod`（换版本时改） |
+| 时机 | push prod 分支后等 **Release Images** CI 绿勾，再更新 NAS |
 | 备份 | 升级前确认 DSM **clinic-daily-backup**；含 Flyway 禁止跳过 |
 | 容器 | 仅 core 三服务；**不部署**本地 `ocr-service` |
 | 回滚 | `restore.sh` + 旧镜像；Flyway **不自动降级** |

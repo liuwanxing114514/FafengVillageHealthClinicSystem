@@ -2,8 +2,8 @@ name: Release Images
 
 on:
   push:
-    branches: [main]
-    tags: ["v*"]
+    branches:
+      - "release/v*-prod"
 
 permissions:
   contents: read
@@ -30,9 +30,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/liuwanxing114514/clinic-backend
           tags: |
-            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,prefix=sha-,format=short
-            type=ref,event=tag
+            type=match,pattern=release/(.+)-prod,group=1
 
       - uses: docker/build-push-action@v6
         with:
@@ -60,9 +59,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/liuwanxing114514/clinic-frontend
           tags: |
-            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,prefix=sha-,format=short
-            type=ref,event=tag
+            type=match,pattern=release/(.+)-prod,group=1
 
       - uses: docker/build-push-action@v6
         with:
