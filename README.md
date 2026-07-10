@@ -89,7 +89,7 @@ docker compose up -d --build
 ```bash
 git clone https://github.com/liuwanxing114514/FafengVillageHealthClinicSystem.git /volume1/docker/clinic
 cd /volume1/docker/clinic && cp .env.example .env
-# 编辑 .env 后，等 GitHub Actions「Release Images」绿勾：
+# 编辑 .env（含 GIT_BRANCH=release/vX.Y.Z-prod）；push prod 分支后等 Release Images 绿勾：
 chmod +x scripts/*.sh && ./scripts/update.sh
 ```
 

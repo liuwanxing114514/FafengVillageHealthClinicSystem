@@ -2,6 +2,7 @@
 # 发凤村卫生室 — NAS 生产更新（A+B：git pull + GHCR pull）
 # 用法：/volume1/docker/clinic/scripts/update.sh [--skip-backup-check]
 # Windows：.\scripts\deploy-remote.ps1
+# 前提：.env 中 GIT_BRANCH=release/vX.Y.Z-prod；且该分支已 push 并等 Release Images CI 绿勾
 
 set -euo pipefail
 
@@ -11,6 +12,7 @@ while [[ $# -gt 0 ]]; do
     --skip-backup-check) SKIP_BACKUP_CHECK=1; shift ;;
     -h|--help)
       echo "用法: $0 [--skip-backup-check]"
+      echo "要求: .env 中 GIT_BRANCH=release/vX.Y.Z-prod"
       exit 0
       ;;
     *) echo "未知参数: $1" >&2; exit 1 ;;
@@ -31,6 +33,15 @@ read_env() {
     fi
   fi
   echo "$default"
+}
+
+resolve_version_tag_from_branch() {
+  local branch="$1"
+  if [[ "$branch" =~ ^release/(.+)-prod$ ]]; then
+    echo "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  return 1
 }
 
 resolve_docker() {
@@ -59,7 +70,7 @@ resolve_compose() {
   return 1
 }
 
-GIT_BRANCH="$(read_env GIT_BRANCH "main")"
+GIT_BRANCH="$(read_env GIT_BRANCH "")"
 COMPOSE_PROJECT="$(read_env COMPOSE_PROJECT_NAME "clinic")"
 BACKEND_PORT="$(read_env BACKEND_PORT "8080")"
 DB_USER="$(read_env POSTGRES_USER "clinic")"
@@ -115,6 +126,20 @@ show_flyway_version() {
   fi
 }
 
+if [[ -z "$GIT_BRANCH" ]]; then
+  log "错误：.env 未设置 GIT_BRANCH"
+  log "请设置 GIT_BRANCH=release/vX.Y.Z-prod（例如 release/v3.1.0-prod）"
+  exit 1
+fi
+
+if ! resolve_version_tag_from_branch "$GIT_BRANCH" >/dev/null; then
+  log "错误：GIT_BRANCH 格式无效: ${GIT_BRANCH}"
+  log "必须为 release/vX.Y.Z-prod（例如 release/v3.1.0-prod）"
+  exit 1
+fi
+
+VERSION_TAG="$(resolve_version_tag_from_branch "$GIT_BRANCH")"
+
 if [[ "$SKIP_BACKUP_CHECK" -eq 0 ]]; then
   log "请确认今日 DSM 备份（clinic-daily-backup）已完成；紧急跳过：$0 --skip-backup-check"
 fi
@@ -134,7 +159,7 @@ export CLINIC_IMAGE_TAG="sha-${COMMIT_SHA}"
 export BACKEND_IMAGE="ghcr.io/liuwanxing114514/clinic-backend:${CLINIC_IMAGE_TAG}"
 export FRONTEND_IMAGE="ghcr.io/liuwanxing114514/clinic-frontend:${CLINIC_IMAGE_TAG}"
 
-log "目标镜像 tag: ${CLINIC_IMAGE_TAG} (commit ${COMMIT_SHA})"
+log "目标镜像 tag: ${CLINIC_IMAGE_TAG} (commit ${COMMIT_SHA}, 分支 ${GIT_BRANCH})"
 warn_env_diff
 
 log "拉取镜像..."
@@ -143,11 +168,19 @@ $COMPOSE -p "$COMPOSE_PROJECT" pull backend frontend
 PULL_RC=$?
 set -e
 if [[ $PULL_RC -ne 0 ]]; then
-  log "sha 标签拉取失败，回退到 main"
-  export CLINIC_IMAGE_TAG="main"
-  export BACKEND_IMAGE="ghcr.io/liuwanxing114514/clinic-backend:main"
-  export FRONTEND_IMAGE="ghcr.io/liuwanxing114514/clinic-frontend:main"
+  log "sha 标签拉取失败，回退到版本 tag: ${VERSION_TAG}"
+  export CLINIC_IMAGE_TAG="${VERSION_TAG}"
+  export BACKEND_IMAGE="ghcr.io/liuwanxing114514/clinic-backend:${VERSION_TAG}"
+  export FRONTEND_IMAGE="ghcr.io/liuwanxing114514/clinic-frontend:${VERSION_TAG}"
+  set +e
   $COMPOSE -p "$COMPOSE_PROJECT" pull backend frontend
+  PULL_RC=$?
+  set -e
+  if [[ $PULL_RC -ne 0 ]]; then
+    log "错误：无法拉取镜像 sha-${COMMIT_SHA} 或 ${VERSION_TAG}"
+    log "请先 push 分支 ${GIT_BRANCH} 并等待 GitHub Actions「Release Images」绿勾"
+    exit 1
+  fi
 fi
 
 log "启动服务..."

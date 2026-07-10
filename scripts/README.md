@@ -2,12 +2,12 @@
 
 | 脚本 | 环境 | 用途 |
 | --- | --- | --- |
-| `update.sh` / `deploy-remote.ps1` | **NAS / Windows** | **生产升级（A+B）**：git pull + GHCR pull + up |
+| `update.sh` / `deploy-remote.ps1` | **NAS / Windows** | **生产升级（A+B）**：git pull + GHCR pull + up；需 `.env` 设 `GIT_BRANCH=release/vX.Y.Z-prod` |
 | `backup.sh` / `restore.sh` | **群晖 NAS / Linux** | 生产备份与恢复 |
 | `seed-demo.sh` / `seed-demo-refresh.sh` | NAS / Git Bash | 演示数据导入与刷新 |
 | `backup.ps1` / `restore.ps1` / `seed-demo.ps1` | **Windows 开发机** | 本地 Docker 联调 |
 | `package-release.ps1` | Windows | **仅离线应急** tar 包；日常不用 |
 | `seed-demo-data.sql` / `seed-demo-purge.sql` | 共用 | 演示 SQL |
 
-生产运维以 **`update.sh`** 为准，见 [`docs/共用/DEPLOYMENT.md`](../docs/共用/DEPLOYMENT.md)。  
+生产运维以 **`update.sh`** 为准，见 [`docs/共用/DEPLOYMENT.md`](../docs/共用/DEPLOYMENT.md)。GHCR 构建仅由 push `release/v*-prod` 触发。  
 本地测试见 [`docs/共用/测试清单.md`](../docs/共用/测试清单.md)。
