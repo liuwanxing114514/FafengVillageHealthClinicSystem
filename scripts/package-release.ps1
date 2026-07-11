@@ -85,9 +85,11 @@ NAS 解压说明（tar 包内文件在根目录，不会多一层文件夹）
   1. ./scripts/backup.sh
   2. 保留旧 .env，diff env.nas.txt 追加缺失项
   3. tar -xzf clinic-deploy-${stamp}.tar.gz 覆盖程序文件
-  4. sudo docker-compose -p clinic --profile ocr up -d --build
-     # 不启 OCR 则去掉 --profile ocr
+  4. sed -i 's/\r$//' scripts/*.sh
+  5. sudo docker-compose -p clinic up -d --build
+     # 不启 OCR 则不要 --profile ocr
      # .env 需含 DOCKER_REGISTRY_PREFIX（见 env.nas.txt）
+     # 本包适用于 release/v*-nas-tar 分支（无 GHCR image 行）
 
 Git: ${commit}  构建: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 含 ocr-service；基础镜像默认 docker.m.daocloud.io（Maven/npm/pip/apt 国内源已写入 Dockerfile）。

@@ -1,5 +1,6 @@
 # 发凤村卫生室 — Docker Compose
-# 生产（群晖 DS920+，A+B）：git pull + GHCR pull，见 docs/共用/DEPLOYMENT.md
+# 本分支 release/v*-nas-tar：NAS 本地 build（package-release.ps1 传 tar 包）
+# GHCR 预构建见 release/v*-prod 分支 + docs/共用/DEPLOYMENT.md §1.5
 #   ./scripts/update.sh
 # 本地开发：docker compose up -d --build
 # 可选 OCR：--profile ocr（生产默认不启，OCR 推荐设置页 Vision 模式）
@@ -26,7 +27,6 @@ services:
       retries: 10
 
   backend:
-    image: ${BACKEND_IMAGE:-ghcr.io/liuwanxing114514/clinic-backend:${CLINIC_IMAGE_TAG}}
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -69,7 +69,6 @@ services:
       - "${BACKEND_PORT:-8080}:8080"
 
   frontend:
-    image: ${FRONTEND_IMAGE:-ghcr.io/liuwanxing114514/clinic-frontend:${CLINIC_IMAGE_TAG}}
     build:
       context: ./frontend
       args:

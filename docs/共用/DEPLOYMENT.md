@@ -1,14 +1,16 @@
 # 部署与升级指南
 
-> **【NAS 生产部署 A+B — 后续 Agent 必读】**  
-> - 升级：`git pull` + GHCR `pull` + `up -d`；**不用传 tar 包**  
-> - 脚本：[`scripts/update.sh`](../../scripts/update.sh)；Windows：[`scripts/deploy-remote.ps1`](../../scripts/deploy-remote.ps1)  
-> - **发布**：仅 push `release/vX.Y.Z-prod` 触发 GHCR 构建（`main`/`develop` 不触发）  
-> - 镜像：`ghcr.io/liuwanxing114514/clinic-{backend,frontend}:sha-<commit>`（回退 `vX.Y.Z`）  
-> - NAS `.env`：`GIT_BRANCH=release/vX.Y.Z-prod`（换版本时改此项）  
-> - 升级前：**DSM 备份**；含 Flyway 禁止跳过；等 **Release Images** CI 绿勾  
-> - 仅 **core 三容器**；不部署本地 `ocr-service`（OCR 走设置页 Vision）  
-> - 回滚：`restore.sh` + 旧镜像 tag；**Flyway 不自动降级**
+> **【NAS 生产部署 — 二选一】**  
+> - **A+B（GHCR）**：`release/vX.Y.Z-prod` 分支 → [`update.sh`](../../scripts/update.sh) · 见下文 §1.4–§1.5  
+> - **本地 tar 包（本分支）**：`release/vX.Y.Z-nas-tar` → [`package-release.ps1`](../../scripts/package-release.ps1) · 见 **§1.6**  
+>
+> **A+B 要点**：`git pull` + GHCR `pull` + `up -d`；不用传 tar  
+> - 脚本：[`update.sh`](../../scripts/update.sh)；Windows：[`scripts/deploy-remote.ps1`](../../scripts/deploy-remote.ps1)  
+> - **发布**：仅 push `release/vX.Y.Z-prod` 触发 GHCR 构建  
+> - NAS `.env`：`GIT_BRANCH=release/vX.Y.Z-prod`  
+> - 升级前 DSM 备份；等 **Release Images** CI 绿勾  
+> - 仅 core 三容器；OCR 走设置页 Vision  
+> - 回滚：`restore.sh` + 旧镜像 tag；Flyway 不自动降级
 
 本文档面向**群晖 DS920+ NAS** 上的生产部署与运维（备份、首次安装、版本更新、回滚）。  
 开发机（Windows + IDEA）仅用于编码与测试，见 [第十三节](#十三开发机非生产)。
@@ -79,6 +81,36 @@ git push -u origin release/v3.1.0-prod
 - 镜像 tag：`sha-<commit>` + `v3.1.0`（从分支名解析）
 - NAS `.env` 设 `GIT_BRANCH=release/v3.1.0-prod`
 - 换版本：新建 `release/v3.2.0-prod` → push → 改 NAS `GIT_BRANCH` → `update.sh`
+
+### 1.5 GHCR 路径（`release/v*-prod`）
+
+见 §1.4 与 §四；**不触发** `release/v*-nas-tar` 分支。
+
+### 1.6 本地 tar 包路径（`release/v*-nas-tar` — 群晖 git 不稳时）
+
+适用：NAS 无法 `git clone/pull`，用 Windows 打包 + File Station 上传。
+
+**开发机打包：**
+
+```powershell
+git checkout release/v3.0.0-nas-tar
+.\scripts\package-release.ps1 -SkipTests
+# 产出 dist\clinic-deploy-YYYYMMDD-HHMMSS.tar.gz
+```
+
+**NAS 升级（保留 `.env` 与 clinic-data）：**
+
+```bash
+cp .env ~/env.bak
+sudo tar -xzf /volume1/docker/clinic-deploy-XXXX.tar.gz -C /volume1/docker/clinic
+cp ~/env.bak .env
+sed -i 's/\r$//' scripts/*.sh
+sudo docker-compose -p clinic up -d --build
+```
+
+- **不要** `--profile ocr`（生产 OCR 用设置页 Vision）
+- compose 本分支 **无** GHCR `image` 行，避免旧版 `docker-compose` build 报错
+- **不用** `update.sh` / `GIT_BRANCH` / 等 Release Images
 
 ---
 

@@ -84,13 +84,14 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-**群晖 NAS 生产**（A+B，不用传 tar 包）：
+**群晖 NAS 生产**（二选一，见 [DEPLOYMENT.md](docs/共用/DEPLOYMENT.md)）：
 
 ```bash
-git clone https://github.com/liuwanxing114514/FafengVillageHealthClinicSystem.git /volume1/docker/clinic
-cd /volume1/docker/clinic && cp .env.example .env
-# 编辑 .env（含 GIT_BRANCH=release/vX.Y.Z-prod）；push prod 分支后等 Release Images 绿勾：
-chmod +x scripts/*.sh && ./scripts/update.sh
+# 路径 A：GHCR（release/vX.Y.Z-prod + update.sh）
+# 路径 B：本地 tar（release/vX.Y.Z-nas-tar，NAS git 不稳时）
+git checkout release/v3.0.0-nas-tar
+.\scripts\package-release.ps1 -SkipTests
+# 上传 dist\clinic-deploy-*.tar.gz → NAS 解压 → sudo docker-compose -p clinic up -d --build
 ```
 
 日常升级：Windows `.\scripts\deploy-remote.ps1` 或 NAS `./scripts/update.sh`。详见 [DEPLOYMENT.md](docs/共用/DEPLOYMENT.md)。
